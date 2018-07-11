@@ -169,27 +169,10 @@ impl<'a> YamlEmitter<'a> {
                 }
                 Ok(())
             },
-            Yaml::Boolean(v) => {
-                if v {
-                    try!(self.writer.write_str("true"));
-                } else {
-                    try!(self.writer.write_str("false"));
-                }
-                Ok(())
-            },
-            Yaml::Integer(v) => {
-                try!(write!(self.writer, "{}", v));
-                Ok(())
-            },
-            Yaml::Real(ref v) => {
-                try!(write!(self.writer, "{}", v));
-                Ok(())
-            },
-            Yaml::Null | Yaml::BadValue => {
+            Yaml::BadValue => {
                 try!(write!(self.writer, "~"));
                 Ok(())
             },
-            // XXX(chenyh) Alias
             _ => { Ok(()) }
         }
     }

@@ -1,26 +1,36 @@
-# yaml-rust
+strict-yaml-rust
+-----
+A [StrictYAML](http://hitchdev.com/strictyaml/) implementation for Rust 
+obtained by savagely chopping off code from [yaml-rust](https://crates.io/crates/yaml-rust).
 
-The missing YAML 1.2 implementation for Rust.
+[![Build Status](https://travis-ci.org/fralalonde/strict-yaml-rust.svg?branch=master)](https://travis-ci.org/fralalonde/strict-yaml-rust)
+[![Build status](https://ci.appveyor.com/api/projects/status/scf47535ckp4ylg4?svg=true)](https://ci.appveyor.com/project/fralalonde/strict-yaml-rust)
+[![license](https://img.shields.io/crates/l/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
+[![version](https://img.shields.io/crates/v/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
 
-[![Build Status](https://travis-ci.org/chyh1990/yaml-rust.svg?branch=master)](https://travis-ci.org/chyh1990/yaml-rust)
-[![Build status](https://ci.appveyor.com/api/projects/status/scf47535ckp4ylg4?svg=true)](https://ci.appveyor.com/project/chyh1990/yaml-rust)
-[![license](https://img.shields.io/crates/l/yaml-rust.svg)](https://crates.io/crates/yaml-rust/)
-[![version](https://img.shields.io/crates/v/yaml-rust.svg)](https://crates.io/crates/yaml-rust/)
+This crate was originally started as feature-gated (`#[cfg(feature)]`) fork of the original.
 
-`yaml-rust` is a pure Rust YAML 1.2 implementation,
-which enjoys the memory safety
-property and other benefits from the Rust language.
-The parser is heavily influenced by `libyaml` and `yaml-cpp`.
+Making it standalone allows to use both implementations (full _and_ strict) from the same app, with confidence that the documents 
+expected to be StrictYAML compliant will _not_ be parsed as full YAML by mistake.
 
-This crate works on all Rust-supported platforms. It also works on
-Rust 1.0.0 and nightly!
+**Mad props** going to the original crate author, [Chen Yuheng](https://github.com/chyh1990).
 
-See [Document](http://chyh1990.github.io/yaml-rust/doc/yaml_rust/)
+## What is StrictYAML?
 
-> NOTE: This library is still under heavy development.
+StrictYAML is a subset of the YAML format, removing troublesome parts of the specification:
 
-> WARNING: This library needs more tests and it is NOT ready for
-> parsing arbitrary user input from *untrusted source*.
+ - No typing. StrictYAML only knows Strings, Arrays and Dicts (Maps).  
+ - No duplicate keys.
+ - No tags.
+ - No anchors or refs.
+ - No "flow" style (embedded JSON).
+ 
+In short, keeping only the parts of YAML that we all know and love.
+
+For more details, see the original documentation and implementation:
+
+ - http://hitchdev.com/strictyaml/
+ - https://github.com/crdoconnor/strictyaml 
 
 ## Quick Start
 
@@ -28,14 +38,14 @@ Add the following to the Cargo.toml of your project:
 
 ```toml
 [dependencies]
-yaml-rust = "0.4"
+strict-yaml-rust = "0.1"
 ```
 
 or
 
 ```toml
 [dependencies.yaml-rust]
-git = "https://github.com/chyh1990/yaml-rust.git"
+git = "https://github.com/fralalonde/strict-yaml-rust.git"
 ```
 
 and import:
@@ -48,8 +58,8 @@ Use `yaml::YamlLoader` to load the YAML documents and access it
 as Vec/HashMap:
 
 ```rust
-extern crate yaml_rust;
-use yaml_rust::{YamlLoader, YamlEmitter};
+extern crate strict_yaml_rust;
+use strict_yaml_rust::{YamlLoader, YamlEmitter};
 
 fn main() {
     let s =
@@ -71,7 +81,7 @@ bar:
 
     // Index access for map & array
     assert_eq!(doc["foo"][0].as_str().unwrap(), "list1");
-    assert_eq!(doc["bar"][1].as_f64().unwrap(), 2.0);
+    assert_eq!(doc["bar"][1].as_str().unwrap(), "2.0");
 
     // Chained key/array access is checked and won't panic,
     // return BadValue if they are not exist.
@@ -105,20 +115,8 @@ documents.
 
 ## Specification Compliance
 
-This implementation aims to provide YAML parser fully compatible with
-the YAML 1.2 specification. The parser can correctly parse almost all
-examples in the specification, except for the following known bugs:
-
-* Empty plain scalar in certain contexts
-
-However, the widely used library `libyaml` also fails to parse these examples,
-so it may not be a huge problem for most users.
-
-## Goals
-
-* Encoder
-* Tag directive
-* Alias while desearilization
+This implementation aims to provide StrictYAML parser fully compatible with
+the StrictYAML specification. 
 
 ## License
 

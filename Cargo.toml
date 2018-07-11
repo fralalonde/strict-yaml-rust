@@ -1,12 +1,12 @@
 [package]
-name = "yaml-rust"
-version = "0.4.0"
-authors = ["Yuheng Chen <yuhengchen@sensetime.com>"]
-homepage = "http://chyh1990.github.io/yaml-rust/"
-documentation = "https://docs.rs/crate/yaml-rust/"
+name = "strict-yaml-rust"
+version = "0.1.0"
+authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>"]
+homepage = "http://fralalonde.github.io/strict-yaml-rust/"
+documentation = "https://docs.rs/crate/strict-yaml-rust/"
 license = "MIT/Apache-2.0"
-description = "The missing YAML 1.2 parser for rust"
-repository = "https://github.com/chyh1990/yaml-rust"
+description = "A StrictYAML parser obtained by chopping code off the original yaml-rust crate"
+repository = "https://github.com/fralalonde/strict-yaml"
 # publish = false # this branch contains breaking changes
 
 [dependencies]

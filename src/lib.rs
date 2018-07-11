@@ -5,12 +5,12 @@
 //!
 //! # Usage
 //!
-//! This crate is [on github](https://github.com/chyh1990/yaml-rust) and can be
-//! used by adding `yaml-rust` to the dependencies in your project's `Cargo.toml`.
+//! This crate is [on github](https://github.com/fralalonde/strict-yaml-rust) and can be
+//! used by adding `strict-yaml` to the dependencies in your project's `Cargo.toml`.
 //!
 //! ```toml
-//! [dependencies.yaml-rust]
-//! git = "https://github.com/chyh1990/yaml-rust.git"
+//! [dependencies.strict-yaml]
+//! git = "https://github.com/fralalonde/strict-yaml-rust.git"
 //! ```
 //!
 //! And this in your crate root:

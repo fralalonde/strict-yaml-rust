@@ -10,22 +10,12 @@ enum State {
     DocumentEnd,
     BlockNode,
     // BlockNodeOrIndentlessSequence,
-    // FlowNode,
     BlockSequenceFirstEntry,
     BlockSequenceEntry,
     IndentlessSequenceEntry,
     BlockMappingFirstKey,
     BlockMappingKey,
     BlockMappingValue,
-    FlowSequenceFirstEntry,
-    FlowSequenceEntry,
-    FlowSequenceEntryMappingKey,
-    FlowSequenceEntryMappingValue,
-    FlowSequenceEntryMappingEnd,
-    FlowMappingFirstKey,
-    FlowMappingKey,
-    FlowMappingValue,
-    FlowMappingEmptyValue,
     End
 }
 
@@ -40,7 +30,6 @@ pub enum Event {
     DocumentStart,
     DocumentEnd,
     /// Refer to an anchor ID
-    Alias(usize),
     /// Value, style, anchor_id, tag
     Scalar(String, TScalarStyle, usize, Option<TokenType>),
     /// Anchor ID
@@ -222,10 +211,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
     fn load_node<R: MarkedEventReceiver>(&mut self, first_ev: Event, mark: Marker, recv: &mut R)
         -> Result<(), ScanError> {
         match first_ev {
-            Event::Alias(..) | Event::Scalar(..) => {
-                recv.on_event(first_ev, mark);
-                Ok(())
-            },
             Event::SequenceStart(_) => {
                 recv.on_event(first_ev, mark);
                 self.load_sequence(recv)
@@ -288,7 +273,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
 
             State::BlockNode => self.parse_node(true, false),
             // State::BlockNodeOrIndentlessSequence => self.parse_node(true, true),
-            // State::FlowNode => self.parse_node(false, false),
 
             State::BlockMappingFirstKey => self.block_mapping_key(true),
             State::BlockMappingKey => self.block_mapping_key(false),
@@ -297,19 +281,7 @@ impl<T: Iterator<Item=char>> Parser<T> {
             State::BlockSequenceFirstEntry => self.block_sequence_entry(true),
             State::BlockSequenceEntry => self.block_sequence_entry(false),
 
-            State::FlowSequenceFirstEntry => self.flow_sequence_entry(true),
-            State::FlowSequenceEntry => self.flow_sequence_entry(false),
-
-            State::FlowMappingFirstKey => self.flow_mapping_key(true),
-            State::FlowMappingKey => self.flow_mapping_key(false),
-            State::FlowMappingValue => self.flow_mapping_value(false),
-
             State::IndentlessSequenceEntry => self.indentless_sequence_entry(),
-
-            State::FlowSequenceEntryMappingKey => self.flow_sequence_entry_mapping_key(),
-            State::FlowSequenceEntryMappingValue => self.flow_sequence_entry_mapping_value(),
-            State::FlowSequenceEntryMappingEnd => self.flow_sequence_entry_mapping_end(),
-            State::FlowMappingEmptyValue => self.flow_mapping_value(true),
 
             /* impossible */
             State::End => unreachable!(),
@@ -427,63 +399,9 @@ impl<T: Iterator<Item=char>> Parser<T> {
         Ok((Event::DocumentEnd, marker))
     }
 
-    fn register_anchor(&mut self, name: String, _: &Marker) -> Result<usize, ScanError> {
-        // anchors can be overrided/reused
-        // if self.anchors.contains_key(name) {
-        //     return Err(ScanError::new(*mark,
-        //         "while parsing anchor, found duplicated anchor"));
-        // }
-        let new_id = self.anchor_id;
-        self.anchor_id += 1;
-        self.anchors.insert(name, new_id);
-        Ok(new_id)
-    }
-
     fn parse_node(&mut self, block: bool, indentless_sequence: bool) -> ParseResult {
-        let mut anchor_id = 0;
-        let mut tag = None;
-        match *try!(self.peek_token()) {
-            Token(_, TokenType::Alias(_)) => {
-                self.pop_state();
-                if let Token(mark, TokenType::Alias(name)) = self.fetch_token() {
-                    match self.anchors.get(&name) {
-                        None => return Err(ScanError::new(mark, "while parsing node, found unknown anchor")),
-                        Some(id) => return Ok((Event::Alias(*id), mark))
-                    }
-                } else {
-                    unreachable!()
-                }
-            },
-            Token(_, TokenType::Anchor(_)) => {
-                if let Token(mark, TokenType::Anchor(name)) = self.fetch_token() {
-                    anchor_id = try!(self.register_anchor(name, &mark));
-                    if let TokenType::Tag(..) = try!(self.peek_token()).1 {
-                        if let tg @ TokenType::Tag(..) = self.fetch_token().1 {
-                            tag = Some(tg);
-                        } else {
-                            unreachable!()
-                        }
-                    }
-                } else {
-                    unreachable!()
-                }
-            },
-            Token(_, TokenType::Tag(..)) => {
-                if let tg @ TokenType::Tag(..) = self.fetch_token().1 {
-                    tag = Some(tg);
-                    if let TokenType::Anchor(_) = try!(self.peek_token()).1 {
-                        if let Token(mark, TokenType::Anchor(name)) = self.fetch_token() {
-                            anchor_id = try!(self.register_anchor(name, &mark));
-                        } else {
-                            unreachable!()
-                        }
-                    }
-                } else {
-                    unreachable!()
-                }
-            },
-            _ => {}
-        }
+        let anchor_id = 0;
+        let tag = None;
         match *try!(self.peek_token()) {
             Token(mark, TokenType::BlockEntry) if indentless_sequence => {
                 self.state = State::IndentlessSequenceEntry;
@@ -496,14 +414,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
                 } else {
                     unreachable!()
                 }
-            },
-            Token(mark, TokenType::FlowSequenceStart) => {
-                self.state = State::FlowSequenceFirstEntry;
-                Ok((Event::SequenceStart(anchor_id), mark))
-            },
-            Token(mark, TokenType::FlowMappingStart) => {
-                self.state = State::FlowMappingFirstKey;
-                Ok((Event::MappingStart(anchor_id), mark))
             },
             Token(mark, TokenType::BlockSequenceStart) if block => {
                 self.state = State::BlockSequenceFirstEntry;
@@ -588,129 +498,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
         }
     }
 
-    fn flow_mapping_key(&mut self, first: bool) -> ParseResult {
-        if first {
-            let _ = try!(self.peek_token());
-            self.skip();
-        }
-        let marker: Marker = {
-            match *try!(self.peek_token()) {
-                Token(mark, TokenType::FlowMappingEnd) => mark,
-                Token(mark, _) => {
-                    if !first {
-                        match *try!(self.peek_token()) {
-                            Token(_, TokenType::FlowEntry) => self.skip(),
-                            Token(mark, _) => return Err(ScanError::new(mark,
-                                "while parsing a flow mapping, did not find expected ',' or '}'"))
-                        }
-                    }
-
-                    match *try!(self.peek_token()) {
-                        Token(_, TokenType::Key) => {
-                            self.skip();
-                            match *try!(self.peek_token()) {
-                                Token(mark, TokenType::Value)
-                                | Token(mark, TokenType::FlowEntry)
-                                | Token(mark, TokenType::FlowMappingEnd) => {
-                                    self.state = State::FlowMappingValue;
-                                    return Ok((Event::empty_scalar(), mark));
-                                },
-                                _ => {
-                                    self.push_state(State::FlowMappingValue);
-                                    return self.parse_node(false, false);
-                                }
-                            }
-                        },
-                        Token(marker, TokenType::Value) => {
-                            self.state = State::FlowMappingValue;
-                            return Ok((Event::empty_scalar(), marker));
-                        },
-                        Token(_, TokenType::FlowMappingEnd) => (),
-                        _ => {
-                            self.push_state(State::FlowMappingEmptyValue);
-                            return self.parse_node(false, false);
-                        }
-                    }
-
-                    mark
-                }
-            }
-        };
-
-        self.pop_state();
-        self.skip();
-        Ok((Event::MappingEnd, marker))
-    }
-
-    fn flow_mapping_value(&mut self, empty: bool) -> ParseResult {
-        let mark: Marker = {
-            if empty {
-                let Token(mark, _) = *try!(self.peek_token());
-                self.state = State::FlowMappingKey;
-                return Ok((Event::empty_scalar(), mark));
-            } else {
-                match *try!(self.peek_token()) {
-                    Token(marker, TokenType::Value) => {
-                        self.skip();
-                        match try!(self.peek_token()).1 {
-                            TokenType::FlowEntry
-                                | TokenType::FlowMappingEnd => { },
-                            _ => {
-                                self.push_state(State::FlowMappingKey);
-                                return self.parse_node(false, false);
-                            }
-                        }
-                        marker
-                    },
-                    Token(marker, _) => marker
-                }
-            }
-        };
-        
-        self.state = State::FlowMappingKey;
-        Ok((Event::empty_scalar(), mark))
-    }
-
-    fn flow_sequence_entry(&mut self, first: bool) -> ParseResult {
-        // skip FlowMappingStart
-        if first {
-            let _ = try!(self.peek_token());
-            //self.marks.push(tok.0);
-            self.skip();
-        }
-        match *try!(self.peek_token()) {
-            Token(mark, TokenType::FlowSequenceEnd) => {
-                self.pop_state();
-                self.skip();
-                return Ok((Event::SequenceEnd, mark));
-            },
-            Token(_, TokenType::FlowEntry) if !first => {
-                self.skip();
-            },
-            Token(mark, _) if !first => {
-                return Err(ScanError::new(mark,
-                        "while parsing a flow sequence, expectd ',' or ']'"));
-            }
-            _ => { /* next */ }
-        }
-        match *try!(self.peek_token()) {
-            Token(mark, TokenType::FlowSequenceEnd) => {
-                self.pop_state();
-                self.skip();
-                Ok((Event::SequenceEnd, mark))
-            },
-            Token(mark, TokenType::Key) => {
-                self.state = State::FlowSequenceEntryMappingKey;
-                self.skip();
-                Ok((Event::MappingStart(0), mark))
-            }
-            _ => {
-                self.push_state(State::FlowSequenceEntry);
-                self.parse_node(false, false)
-            }
-        }
-    }
-
     fn indentless_sequence_entry(&mut self) -> ParseResult {
         match *try!(self.peek_token()) {
             Token(_, TokenType::BlockEntry) => (),
@@ -769,50 +556,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
         }
     }
 
-    fn flow_sequence_entry_mapping_key(&mut self) -> ParseResult {
-        match *try!(self.peek_token()) {
-            Token(mark, TokenType::Value)
-            | Token(mark, TokenType::FlowEntry)
-            | Token(mark, TokenType::FlowSequenceEnd) => {
-                self.skip();
-                self.state = State::FlowSequenceEntryMappingValue;
-                Ok((Event::empty_scalar(), mark))
-            },
-            _ => {
-                self.push_state(State::FlowSequenceEntryMappingValue);
-                self.parse_node(false, false)
-            }
-        }
-    }
-
-    fn flow_sequence_entry_mapping_value(&mut self) -> ParseResult {
-        match *try!(self.peek_token()) {
-            Token(_, TokenType::Value) => {
-                    self.skip();
-                    self.state = State::FlowSequenceEntryMappingValue;
-                    match *try!(self.peek_token()) {
-                        Token(mark, TokenType::FlowEntry)
-                        | Token(mark, TokenType::FlowSequenceEnd) => {
-                            self.state = State::FlowSequenceEntryMappingEnd;
-                            Ok((Event::empty_scalar(), mark))
-                        },
-                        _ => {
-                            self.push_state(State::FlowSequenceEntryMappingEnd);
-                            self.parse_node(false, false)
-                        }
-                    }
-            },
-            Token(mark, _) => {
-                self.state = State::FlowSequenceEntryMappingEnd;
-                Ok((Event::empty_scalar(), mark))
-            }
-        }
-    }
-
-    fn flow_sequence_entry_mapping_end(&mut self) -> ParseResult {
-        self.state = State::FlowSequenceEntry;
-        Ok((Event::MappingEnd, self.scanner.mark()))
-    }
 }
 
 #[cfg(test)]
