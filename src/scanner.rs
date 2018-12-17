@@ -27,11 +27,7 @@ pub struct Marker {
 
 impl Marker {
     fn new(index: usize, line: usize, col: usize) -> Marker {
-        Marker {
-            index: index,
-            line: line,
-            col: col
-        }
+        Marker { index, line, col }
     }
 
     pub fn index(&self) -> usize {
@@ -106,7 +102,7 @@ pub enum TokenType {
     FlowEntry,
     Key,
     Value,
-    Scalar(TScalarStyle, String)
+    Scalar(TScalarStyle, String),
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]
@@ -126,7 +122,7 @@ impl SimpleKey {
             possible: false,
             required: false,
             token_number: 0,
-            mark: mark,
+            mark,
         }
     }
 }
@@ -145,7 +141,7 @@ pub struct Scanner<T> {
     simple_keys: Vec<SimpleKey>,
     indent: isize,
     indents: Vec<isize>,
-    flow_level: usize,
+    flow_level: u8,
     tokens_parsed: usize,
     token_available: bool,
 }
@@ -195,14 +191,12 @@ fn is_alpha(c: char) -> bool {
     match c {
         '0'...'9' | 'a'...'z' | 'A'...'Z' => true,
         '_' | '-' => true,
-        _ => false
+        _ => false,
     }
 }
 #[inline]
 fn is_hex(c: char) -> bool {
-    (c >= '0' && c <= '9')
-        || (c >= 'a' && c <= 'f')
-        || (c >= 'A' && c <= 'F')
+    (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 #[inline]
 fn as_hex(c: char) -> u32 {
@@ -210,7 +204,7 @@ fn as_hex(c: char) -> u32 {
         '0'...'9' => (c as u32) - ('0' as u32),
         'a'...'f' => (c as u32) - ('a' as u32) + 10,
         'A'...'F' => (c as u32) - ('A' as u32) + 10,
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -220,7 +214,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     /// Creates the YAML tokenizer.
     pub fn new(rdr: T) -> Scanner<T> {
         Scanner {
-            rdr: rdr,
+            rdr,
             buffer: VecDeque::new(),
             mark: Marker::new(0, 1, 0),
             tokens: VecDeque::new(),
@@ -338,7 +332,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         }
         self.skip_to_next_token();
 
-        try!(self.stale_simple_keys());
+        self.stale_simple_keys()?;
 
         let mark = self.mark;
         self.unroll_indent(mark.col as isize);
@@ -346,7 +340,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         self.lookahead(4);
 
         if is_z(self.ch()) {
-            try!(self.fetch_stream_end());
+            self.fetch_stream_end()?;
             return Ok(());
         }
 
@@ -360,7 +354,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             && self.buffer[1] == '-'
             && self.buffer[2] == '-'
             && is_blankz(self.buffer[3]) {
-            try!(self.fetch_document_indicator(TokenType::DocumentStart));
+            self.fetch_document_indicator(TokenType::DocumentStart)?;
             return Ok(());
         }
 
@@ -369,7 +363,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             && self.buffer[1] == '.'
             && self.buffer[2] == '.'
             && is_blankz(self.buffer[3]) {
-            try!(self.fetch_document_indicator(TokenType::DocumentEnd));
+            self.fetch_document_indicator(TokenType::DocumentEnd)?;
             return Ok(());
         }
 
@@ -406,7 +400,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         }
 
         if !self.token_available {
-            try!(self.fetch_more_tokens());
+            self.fetch_more_tokens()?;
         }
         let t = self.tokens.pop_front().unwrap();
         self.token_available = false;
@@ -425,7 +419,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             if self.tokens.is_empty() {
                 need_more = true;
             } else {
-                try!(self.stale_simple_keys());
+                self.stale_simple_keys()?;
                 for sk in &self.simple_keys {
                     if sk.possible && sk.token_number == self.tokens_parsed {
                         need_more = true;
@@ -434,8 +428,10 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                 }
             }
 
-            if !need_more { break; }
-            try!(self.fetch_next_token());
+            if !need_more {
+                break;
+            }
+            self.fetch_next_token()?;
         }
         self.token_available = true;
 
@@ -481,7 +477,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         self.stream_start_produced = true;
         self.allow_simple_key();
         self.tokens.push_back(Token(mark, TokenType::StreamStart(TEncoding::Utf8)));
-        self.simple_keys.push(SimpleKey::new(Marker::new(0,0,0)));
+        self.simple_keys.push(SimpleKey::new(Marker::new(0, 0, 0)));
     }
 
     fn fetch_stream_end(&mut self) -> ScanResult {
@@ -492,7 +488,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         }
 
         self.unroll_indent(-1);
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
         self.disallow_simple_key();
 
         self.tokens.push_back(Token(self.mark, TokenType::StreamEnd));
@@ -501,11 +497,11 @@ impl<T: Iterator<Item=char>> Scanner<T> {
 
     fn fetch_directive(&mut self) -> ScanResult {
         self.unroll_indent(-1);
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
 
         self.disallow_simple_key();
 
-        let tok = try!(self.scan_directive());
+        let tok = self.scan_directive()?;
 
         self.tokens.push_back(tok);
 
@@ -516,11 +512,9 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         let start_mark = self.mark;
         self.skip();
 
-        let name = try!(self.scan_directive_name());
+        let name = self.scan_directive_name()?;
         let tok = match name.as_ref() {
-            "YAML" => {
-                try!(self.scan_version_directive_value(&start_mark))
-            },
+            "YAML" => self.scan_version_directive_value(&start_mark)?,
             // XXX This should be a warning instead of an error
             _ => {
                 // skip current line
@@ -530,7 +524,10 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                     self.lookahead(1);
                 }
                 // XXX return an empty TagDirective token
-                Token(start_mark, TokenType::TagDirective(String::new(), String::new()))
+                Token(
+                    start_mark,
+                    TokenType::TagDirective(String::new(), String::new())
+                )
                 // return Err(ScanError::new(start_mark,
                 //     "while scanning a directive, found unknown directive name"))
             }
@@ -571,7 +568,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             self.lookahead(1);
         }
 
-        let major = try!(self.scan_version_directive_number(mark));
+        let major = self.scan_version_directive_number(mark)?;
 
         if self.ch() != '.' {
             return Err(ScanError::new(*mark,
@@ -580,7 +577,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
 
         self.skip();
 
-        let minor = try!(self.scan_version_directive_number(mark));
+        let minor = self.scan_version_directive_number(mark)?;
 
         Ok(Token(*mark, TokenType::VersionDirective(major, minor)))
     }
@@ -633,9 +630,9 @@ impl<T: Iterator<Item=char>> Scanner<T> {
 
     fn fetch_flow_collection_start(&mut self, tok :TokenType) -> ScanResult {
         // The indicators '[' and '{' may start a simple key.
-        try!(self.save_simple_key());
+        self.save_simple_key()?;
 
-        self.increase_flow_level();
+        self.increase_flow_level()?;
 
         self.allow_simple_key();
 
@@ -647,7 +644,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     }
 
     fn fetch_flow_collection_end(&mut self, tok :TokenType) -> ScanResult {
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
         self.decrease_flow_level();
 
         self.disallow_simple_key();
@@ -660,7 +657,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     }
 
     fn fetch_flow_entry(&mut self) -> ScanResult {
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
         self.allow_simple_key();
 
         let start_mark = self.mark;
@@ -670,10 +667,15 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         Ok(())
     }
 
-    fn increase_flow_level(&mut self) {
-        self.simple_keys.push(SimpleKey::new(Marker::new(0,0,0)));
-        self.flow_level += 1;
+    fn increase_flow_level(&mut self) -> ScanResult {
+        self.simple_keys.push(SimpleKey::new(Marker::new(0, 0, 0)));
+        self.flow_level = self
+                .flow_level
+                .checked_add(1)
+                .ok_or_else(|| ScanError::new(self.mark, "recursion limit exceeded"))?;
+        Ok(())
     }
+
     fn decrease_flow_level(&mut self) {
         if self.flow_level > 0 {
             self.flow_level -= 1;
@@ -696,7 +698,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             // - * only allowed in block
             return Err(ScanError::new(self.mark, r#""-" is only valid inside a block"#))
         }
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
         self.allow_simple_key();
 
         let start_mark = self.mark;
@@ -708,7 +710,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
 
     fn fetch_document_indicator(&mut self, t: TokenType) -> ScanResult {
         self.unroll_indent(-1);
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
         self.disallow_simple_key();
 
         let mark = self.mark;
@@ -722,9 +724,9 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     }
 
     fn fetch_block_scalar(&mut self, literal: bool) -> ScanResult {
-        try!(self.save_simple_key());
+        self.save_simple_key()?;
         self.allow_simple_key();
-        let tok = try!(self.scan_block_scalar(literal));
+        let tok = self.scan_block_scalar(literal)?;
 
         self.tokens.push_back(tok);
         Ok(())
@@ -811,7 +813,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             indent = if self.indent >= 0 { (self.indent + increment as isize) as usize } else { increment }
         }
         // Scan the leading line breaks and determine the indentation level if needed.
-        try!(self.block_scalar_breaks(&mut indent, &mut trailing_breaks));
+        self.block_scalar_breaks(&mut indent, &mut trailing_breaks)?;
 
         self.lookahead(1);
 
@@ -848,7 +850,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             self.read_break(&mut leading_break);
 
             // Eat the following intendation spaces and line breaks.
-            try!(self.block_scalar_breaks(&mut indent, &mut trailing_breaks));
+            self.block_scalar_breaks(&mut indent, &mut trailing_breaks)?;
         }
 
         // Chomp the tail.
@@ -871,10 +873,9 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         let mut max_indent = 0;
         loop {
             self.lookahead(1);
-            while (*indent == 0 || self.mark.col < *indent)
-                && self.buffer[0] == ' ' {
-                    self.skip();
-                    self.lookahead(1);
+            while (*indent == 0 || self.mark.col < *indent) && self.buffer[0] == ' ' {
+                self.skip();
+                self.lookahead(1);
             }
 
             if self.mark.col > max_indent {
@@ -882,8 +883,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             }
 
             // Check for a tab character messing the intendation.
-            if (*indent == 0 || self.mark.col < *indent)
-                && self.buffer[0] == '\t' {
+            if (*indent == 0 || self.mark.col < *indent) && self.buffer[0] == '\t' {
                 return Err(ScanError::new(self.mark,
                         "while scanning a block scalar, found a tab character where an intendation space is expected"));
             }
@@ -910,10 +910,10 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     }
 
     fn fetch_flow_scalar(&mut self, single: bool) -> ScanResult {
-        try!(self.save_simple_key());
+        self.save_simple_key()?;
         self.disallow_simple_key();
 
-        let tok = try!(self.scan_flow_scalar(single));
+        let tok = self.scan_flow_scalar(single)?;
 
         self.tokens.push_back(tok);
         Ok(())
@@ -948,8 +948,10 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                 }
 
             if is_z(self.ch()) {
-                    return Err(ScanError::new(start_mark,
-                        "while scanning a quoted scalar, found unexpected end of stream"));
+                    return Err(ScanError::new(
+                        start_mark,
+                        "while scanning a quoted scalar, found unexpected end of stream"
+                    ));
             }
 
             self.lookahead(2);
@@ -966,8 +968,8 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                         self.skip();
                     },
                     // Check for the right quote.
-                    '\'' if single => { break; },
-                    '"' if !single => { break; },
+                    '\'' if single => break,
+                    '"' if !single => break,
                     // Check for an escaped line break.
                     '\\' if !single && is_break(self.buffer[1]) => {
                         self.lookahead(3);
@@ -1041,8 +1043,8 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             }
             self.lookahead(1);
             match self.ch() {
-                '\'' if single => { break; },
-                '"' if !single => { break; },
+                '\'' if single => break,
+                '"' if !single => break,
                 _ => {}
             }
 
@@ -1102,10 +1104,10 @@ impl<T: Iterator<Item=char>> Scanner<T> {
     }
 
     fn fetch_plain_scalar(&mut self) -> ScanResult {
-        try!(self.save_simple_key());
+        self.save_simple_key()?;
         self.disallow_simple_key();
 
-        let tok = try!(self.scan_plain_scalar());
+        let tok = self.scan_plain_scalar()?;
 
         self.tokens.push_back(tok);
         Ok(())
@@ -1234,7 +1236,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                 TokenType::BlockMappingStart, start_mark);
         }
 
-        try!(self.remove_simple_key());
+        self.remove_simple_key()?;
 
         if self.flow_level == 0 {
             self.allow_simple_key();
@@ -1321,7 +1323,7 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             sk.required = required;
             sk.token_number = self.tokens_parsed + self.tokens.len();
 
-            try!(self.remove_simple_key());
+            self.remove_simple_key()?;
 
             self.simple_keys.pop();
             self.simple_keys.push(sk);

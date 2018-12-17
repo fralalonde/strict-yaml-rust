@@ -1,0 +1,19 @@
+---
+serviceName: "test-service"
+version: "1.4.2"
+requiredServices:
+- name: "support-service"
+  version: "1.0.1"
+  library: false
+requiredLibraries:
+- name: "jdk"
+  version: "1.4.2"
+  library: true
+- name: "mono"
+  version: "1.4.2"
+  library: true
+standardInstallPath: "test-service"
+deployerAdaptorClassname: "com.weareadaptive.hydra.example.JavaServiceDeployer"
+metaData:
+  key1: "value1"
+  key2: "value2"

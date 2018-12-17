@@ -1,7 +1,7 @@
 // Copyright 2015, Yuheng Chen. See the LICENSE file at the top-level
 // directory of this distribution.
 
-//! YAML 1.2 implementation in pure Rust.
+//! Strict YAML implementation in pure Rust.
 //!
 //! # Usage
 //!
@@ -36,21 +36,26 @@
 //!
 //! ```
 
+#![doc(html_root_url = "https://docs.rs/strict-yaml-rust/0.1.0")]
+#![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(feature = "cargo-clippy", warn(cyclomatic_complexity))]
-#![cfg_attr(feature = "cargo-clippy", allow(match_same_arms))]
+#![cfg_attr(
+    feature = "cargo-clippy",
+    allow(match_same_arms, should_implement_trait)
+)]
 
 extern crate linked_hash_map;
 
-pub mod yaml;
-pub mod scanner;
-pub mod parser;
 pub mod emitter;
+pub mod parser;
+pub mod scanner;
+pub mod yaml;
 
 // reexport key APIs
 pub use scanner::ScanError;
+pub use emitter::{EmitError, YamlEmitter};
 pub use parser::Event;
 pub use yaml::{Yaml, YamlLoader};
-pub use emitter::{YamlEmitter, EmitError};
 
 #[cfg(test)]
 mod tests {
@@ -98,7 +103,7 @@ mod tests {
     }
 
     fn try_fail(s: &str) -> Result<Vec<Yaml>, ScanError> {
-        let t = try!(YamlLoader::load_from_str(s));
+        let t = YamlLoader::load_from_str(s)?;
         Ok(t)
     }
 

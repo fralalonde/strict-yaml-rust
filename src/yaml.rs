@@ -67,27 +67,35 @@ impl MarkedEventReceiver for YamlLoader {
                     // empty document
                     0 => self.docs.push(Yaml::BadValue),
                     1 => self.docs.push(self.doc_stack.pop().unwrap().0),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
-            },
+            }
             Event::SequenceStart(aid) => {
                 self.doc_stack.push((Yaml::Array(Vec::new()), aid));
-            },
+            }
             Event::SequenceEnd => {
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node);
-            },
+            }
             Event::MappingStart(aid) => {
                 self.doc_stack.push((Yaml::Hash(Hash::new()), aid));
                 self.key_stack.push(Yaml::BadValue);
-            },
+            }
             Event::MappingEnd => {
                 self.key_stack.pop().unwrap();
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node);
-            },
-            Event::Scalar(v, style, aid, tag) =>
-                self.insert_new_node((Yaml::String(v), aid)),
+            }
+            Event::Scalar(v, style, aid, tag) => {
+                let node = if style != TScalarStyle::Plain {
+                    Yaml::String(v)
+                } else {
+                    // Datatype is not specified, or unrecognized
+                    Yaml::from_str(&v)
+                };
+
+                self.insert_new_node((node, aid));
+            }
 
             _ => { /* ignore */ }
         }
@@ -132,7 +140,7 @@ impl YamlLoader {
             anchor_map: BTreeMap::new(),
         };
         let mut parser = Parser::new(source.chars());
-        try!(parser.load(&mut loader, true));
+        parser.load(&mut loader, true)?;
         Ok(loader.docs)
     }
 }
