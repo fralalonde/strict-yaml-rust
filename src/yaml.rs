@@ -271,8 +271,8 @@ c: [1, 2]
         let out = YamlLoader::load_from_str(&s).unwrap();
         let doc = &out[0];
         assert_eq!(doc["a"].as_str().unwrap(), "1");
-        assert_eq!(doc["b"].as_str().unwrap(), "2");
-        assert_eq!(doc["c"][1].as_str().unwrap(), "2");
+        assert_eq!(doc["b"].as_str().unwrap(), "2.2");
+        assert_eq!(doc["c"].as_str().unwrap(), "[1, 2]");
         assert!(doc["d"][0].is_badvalue());
     }
 
@@ -322,43 +322,6 @@ a7: 你好
     }
 
     #[test]
-    fn test_anchor() {
-        let s =
-"
-a1: &DEFAULT
-    b1: 4
-    b2: d
-a2: *DEFAULT
-";
-        let out = YamlLoader::load_from_str(&s).unwrap();
-        let doc = &out[0];
-        assert_eq!(doc["a2"]["b1"].as_str().unwrap(), "4");
-    }
-
-    #[test]
-    fn test_bad_anchor() {
-        let s =
-"
-a1: &DEFAULT
-    b1: 4
-    b2: *DEFAULT
-";
-        let out = YamlLoader::load_from_str(&s).unwrap();
-        let doc = &out[0];
-        assert_eq!(doc["a1"]["b2"], Yaml::BadValue);
-
-    }
-
-    #[test]
-    fn test_github_27() {
-        // https://github.com/fralalonde/strict-yaml-rust/issues/27
-        let s = "&a";
-        let out = YamlLoader::load_from_str(&s).unwrap();
-        let doc = &out[0];
-        assert_eq!(doc.as_str().unwrap(), "");
-    }
-
-    #[test]
     fn test_plain_datatype() {
         let s =
 "
@@ -380,34 +343,20 @@ a1: &DEFAULT
         let out = YamlLoader::load_from_str(&s).unwrap();
         let doc = &out[0];
 
-        assert_eq!(doc[0].as_str().unwrap(), "string");
-        assert_eq!(doc[1].as_str().unwrap(), "string");
+        assert_eq!(doc[0].as_str().unwrap(), "'string'");
+        assert_eq!(doc[1].as_str().unwrap(), "\"string\"");
         assert_eq!(doc[2].as_str().unwrap(), "string");
         assert_eq!(doc[3].as_str().unwrap(), "123");
         assert_eq!(doc[4].as_str().unwrap(), "-321");
         assert_eq!(doc[5].as_str().unwrap(), "1.23");
         assert_eq!(doc[6].as_str().unwrap(), "-1e4");
-        assert_eq!(doc[6].as_str().unwrap(), "~");
-        assert_eq!(doc[6].as_str().unwrap(), "null");
+        assert_eq!(doc[7].as_str().unwrap(), "~");
+        assert_eq!(doc[8].as_str().unwrap(), "null");
         assert_eq!(doc[9].as_str().unwrap(), "true");
         assert_eq!(doc[10].as_str().unwrap(), "false");
         assert_eq!(doc[11].as_str().unwrap(), "!!str 0");
         assert_eq!(doc[12].as_str().unwrap(), "!!int 100");
         assert_eq!(doc[13].as_str().unwrap(), "!!float 2");
-    }
-
-    #[test]
-    fn test_bad_hypen() {
-        // See: https://github.com/fralalonde/strict-yaml-rust/issues/23
-        let s = "{-";
-        assert!(YamlLoader::load_from_str(&s).is_err());
-    }
-
-    #[test]
-    fn test_issue_65() {
-        // See: https://github.com/fralalonde/strict-yaml-rust/issues/65
-        let b = "\n\"ll\\\"ll\\\r\n\"ll\\\"ll\\\r\r\r\rU\r\r\rU";
-        assert!(YamlLoader::load_from_str(&b).is_err());
     }
 
     #[test]
@@ -446,8 +395,8 @@ a1: &DEFAULT
         let mut out = YamlLoader::load_from_str(&s).unwrap().into_iter();
         let mut doc = out.next().unwrap().into_iter();
 
-        assert_eq!(doc.next().unwrap().into_string().unwrap(), "string");
-        assert_eq!(doc.next().unwrap().into_string().unwrap(), "string");
+        assert_eq!(doc.next().unwrap().into_string().unwrap(), "'string'");
+        assert_eq!(doc.next().unwrap().into_string().unwrap(), "\"string\"");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "string");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "123");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "-321");
@@ -457,7 +406,7 @@ a1: &DEFAULT
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "false");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!str 0");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!int 100");
-        assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!int float 2");
+        assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!float 2");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!bool true");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "!!bool false");
         assert_eq!(doc.next().unwrap().into_string().unwrap(), "0xFF");

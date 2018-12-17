@@ -424,6 +424,10 @@ impl<T: Iterator<Item=char>> Parser<T> {
                 self.pop_state();
                 Ok((Event::empty_scalar_with_anchor(anchor_id, tag), mark))
             },
+//            Token(mark, token_type) => Err(ScanError::new(
+//                mark,
+//                &format!("token: {:?} while parsing a node, did not find expected node content", token_type)
+//            )),
             Token(mark, _) => { Err(ScanError::new(mark, "while parsing a node, did not find expected node content")) }
         }
     }

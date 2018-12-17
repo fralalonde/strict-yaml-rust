@@ -19,11 +19,11 @@ expected to be StrictYAML compliant will _not_ be parsed as full YAML by mistake
 
 StrictYAML is a subset of the YAML format, removing troublesome parts of the specification:
 
- - No typing. StrictYAML only knows Strings, Arrays and Dicts (Maps).  
- - No duplicate keys.
- - No tags.
- - No anchors or refs.
- - No "flow" style (embedded JSON).
+ - No typing. StrictYAML only knows Strings, Arrays and Dicts (Maps)  
+ - No duplicate keys
+ - No tags
+ - No anchors or refs
+ - No "flow" style (embedded JSON)
  
 In short, keeping only the parts of YAML that we all know and love.
 

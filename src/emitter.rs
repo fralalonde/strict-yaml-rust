@@ -50,8 +50,6 @@ pub type EmitResult = Result<(), EmitError>;
 
 // from serialize::json
 fn escape_str(wr: &mut fmt::Write, v: &str) -> Result<(), fmt::Error> {
-    wr.write_str("\"")?;
-
     let mut start = 0;
 
     for (i, byte) in v.bytes().enumerate() {
@@ -107,7 +105,6 @@ fn escape_str(wr: &mut fmt::Write, v: &str) -> Result<(), fmt::Error> {
         wr.write_str(&v[start..])?;
     }
 
-    wr.write_str("\"")?;
     Ok(())
 }
 
@@ -442,64 +439,6 @@ z: string with spaces"#;
         }
 
         assert_eq!(s, writer, "actual:\n\n{}\n", writer);
-    }
-
-    #[test]
-    fn emit_quoted_bools() {
-        let input = r#"---
-string0: yes
-string1: no
-string2: "true"
-string3: "false"
-string4: "~"
-null0: ~
-[true, false]: real_bools
-[True, TRUE, False, FALSE, y,Y,yes,Yes,YES,n,N,no,No,NO,on,On,ON,off,Off,OFF]: false_bools
-bool0: true
-bool1: false"#;
-        let expected = r#"---
-string0: "yes"
-string1: "no"
-string2: "true"
-string3: "false"
-string4: "~"
-null0: ~
-? - true
-  - false
-: real_bools
-? - "True"
-  - "TRUE"
-  - "False"
-  - "FALSE"
-  - y
-  - Y
-  - "yes"
-  - "Yes"
-  - "YES"
-  - n
-  - N
-  - "no"
-  - "No"
-  - "NO"
-  - "on"
-  - "On"
-  - "ON"
-  - "off"
-  - "Off"
-  - "OFF"
-: false_bools
-bool0: true
-bool1: false"#;
-
-        let docs = YamlLoader::load_from_str(&input).unwrap();
-        let doc = &docs[0];
-        let mut writer = String::new();
-        {
-            let mut emitter = YamlEmitter::new(&mut writer);
-            emitter.dump(doc).unwrap();
-        }
-
-        assert_eq!(expected, writer, "expected:\n{}\nactual:\n{}\n", expected, writer);
     }
 
     #[test]
