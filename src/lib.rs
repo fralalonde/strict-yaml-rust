@@ -49,13 +49,13 @@ extern crate linked_hash_map;
 pub mod emitter;
 pub mod parser;
 pub mod scanner;
-pub mod yaml;
+pub mod strict_yaml;
 
 // reexport key APIs
 pub use scanner::ScanError;
 pub use emitter::{EmitError, StrictYamlEmitter};
 pub use parser::Event;
-pub use yaml::{StrictYaml, StrictYamlLoader};
+pub use strict_yaml::{StrictYaml, StrictYamlLoader};
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 use std::convert::From;
 use std::error::Error;
 use std::fmt::{self, Display};
-use yaml::{Hash, StrictYaml};
+use strict_yaml::{Hash, StrictYaml};
 
 
 #[derive(Copy, Clone, Debug)]

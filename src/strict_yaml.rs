@@ -247,7 +247,7 @@ impl Iterator for YamlIter {
 
 #[cfg(test)]
 mod test {
-    use yaml::*;
+    use strict_yaml::*;
         #[test]
     fn test_coerce() {
         let s = "---
