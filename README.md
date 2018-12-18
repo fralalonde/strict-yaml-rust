@@ -54,12 +54,12 @@ and import:
 extern crate yaml_rust;
 ```
 
-Use `yaml::YamlLoader` to load the YAML documents and access it
+Use `yaml::StrictYamlLoader` to load the YAML documents and access it
 as Vec/HashMap:
 
 ```rust
 extern crate strict_yaml_rust;
-use strict_yaml_rust::{YamlLoader, YamlEmitter};
+use strict_yaml_rust::{StrictYamlLoader, StrictYamlEmitter};
 
 fn main() {
     let s =
@@ -71,7 +71,7 @@ bar:
     - 1
     - 2.0
 ";
-    let docs = YamlLoader::load_from_str(s).unwrap();
+    let docs = StrictYamlLoader::load_from_str(s).unwrap();
 
     // Multi document support, doc is a yaml::Yaml
     let doc = &docs[0];
@@ -90,7 +90,7 @@ bar:
     // Dump the YAML object
     let mut out_str = String::new();
     {
-        let mut emitter = YamlEmitter::new(&mut out_str);
+        let mut emitter = StrictYamlEmitter::new(&mut out_str);
         emitter.dump(doc).unwrap(); // dump the YAML object to a String
     }
     println!("{}", out_str);

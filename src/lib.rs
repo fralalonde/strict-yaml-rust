@@ -16,7 +16,7 @@
 //! And this in your crate root:
 //!
 //! ```rust
-//! extern crate yaml_rust;
+//! extern crate strict_yaml_rust;
 //! ```
 //!
 //! Parse a string into `Vec<Yaml>` and then serialize it as a YAML string.
@@ -24,14 +24,14 @@
 //! # Examples
 //!
 //! ```
-//! use yaml_rust::{YamlLoader, YamlEmitter};
+//! use strict_yaml_rust::{StrictYamlLoader, StrictYamlEmitter};
 //!
-//! let docs = YamlLoader::load_from_str("[1, 2, 3]").unwrap();
+//! let docs = StrictYamlLoader::load_from_str("zug: [1, 2, 3]").unwrap();
 //! let doc = &docs[0]; // select the first document
-//! assert_eq!(doc[0].as_i64().unwrap(), 1); // access elements by index
+//! assert_eq!(doc["zug"].as_str(), Some("[1, 2, 3]")); // access elements by key
 //!
 //! let mut out_str = String::new();
-//! let mut emitter = YamlEmitter::new(&mut out_str);
+//! let mut emitter = StrictYamlEmitter::new(&mut out_str);
 //! emitter.dump(doc).unwrap(); // dump the YAML object to a String
 //!
 //! ```
@@ -53,9 +53,9 @@ pub mod yaml;
 
 // reexport key APIs
 pub use scanner::ScanError;
-pub use emitter::{EmitError, YamlEmitter};
+pub use emitter::{EmitError, StrictYamlEmitter};
 pub use parser::Event;
-pub use yaml::{Yaml, YamlLoader};
+pub use yaml::{StrictYaml, StrictYamlLoader};
 
 #[cfg(test)]
 mod tests {
@@ -88,22 +88,22 @@ mod tests {
     - name: Staff
       damage: 3
 ";
-        let docs = YamlLoader::load_from_str(s).unwrap();
+        let docs = StrictYamlLoader::load_from_str(s).unwrap();
         let doc = &docs[0];
 
         assert_eq!(doc[0]["name"].as_str().unwrap(), "Ogre");
 
         let mut writer = String::new();
         {
-            let mut emitter = YamlEmitter::new(&mut writer);
+            let mut emitter = StrictYamlEmitter::new(&mut writer);
             emitter.dump(doc).unwrap();
         }
 
         assert!(!writer.is_empty());
     }
 
-    fn try_fail(s: &str) -> Result<Vec<Yaml>, ScanError> {
-        let t = YamlLoader::load_from_str(s)?;
+    fn try_fail(s: &str) -> Result<Vec<StrictYaml>, ScanError> {
+        let t = StrictYamlLoader::load_from_str(s)?;
         Ok(t)
     }
 
@@ -116,7 +116,7 @@ scalar
 key: [1, 2]]
 key1:a2
 ";
-        assert!(YamlLoader::load_from_str(s).is_err());
+        assert!(StrictYamlLoader::load_from_str(s).is_err());
         assert!(try_fail(s).is_err());
     }
 

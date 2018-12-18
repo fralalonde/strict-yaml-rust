@@ -11,8 +11,8 @@ pub enum TEncoding {
 pub enum TScalarStyle {
     Any,
     Plain,
-//    SingleQuoted,
-//    DoubleQuoted,
+    SingleQuoted,
+    DoubleQuoted,
 
     Literal,
     Foled
@@ -346,19 +346,21 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             && self.buffer[0] == '-'
             && self.buffer[1] == '-'
             && self.buffer[2] == '-'
-            && is_blankz(self.buffer[3]) {
-            self.fetch_document_indicator(TokenType::DocumentStart)?;
-            return Ok(());
-        }
+            && is_blankz(self.buffer[3])
+            {
+                self.fetch_document_indicator(TokenType::DocumentStart)?;
+                return Ok(());
+            }
 
         if self.mark.col == 0
             && self.buffer[0] == '.'
             && self.buffer[1] == '.'
             && self.buffer[2] == '.'
-            && is_blankz(self.buffer[3]) {
-            self.fetch_document_indicator(TokenType::DocumentEnd)?;
-            return Ok(());
-        }
+            && is_blankz(self.buffer[3])
+            {
+                self.fetch_document_indicator(TokenType::DocumentEnd)?;
+                return Ok(());
+            }
 
         let c = self.buffer[0];
         let nc = self.buffer[1];
@@ -366,16 +368,19 @@ impl<T: Iterator<Item=char>> Scanner<T> {
             '-' if is_blankz(nc) => self.fetch_block_entry(),
             '?' if is_blankz(nc) => self.fetch_key(),
             ':' if is_blankz(nc) => self.fetch_value(),
-            // Is it an alias?
             // Is it a literal scalar?
             '|' => self.fetch_block_scalar(true),
             // Is it a folded scalar?
             '>' => self.fetch_block_scalar(false),
+            '\'' => self.fetch_flow_scalar(true),
+            '"' => self.fetch_flow_scalar(false),
             // plain scalar
             '-' if !is_blankz(nc) => self.fetch_plain_scalar(),
             ':' | '?' if !is_blankz(nc) => self.fetch_plain_scalar(),
-            '%' | '@' | '`' => Err(ScanError::new(self.mark,
-                    &format!("unexpected character: `{}'", c))),
+            '%' | '@' | '`' => Err(ScanError::new(
+                self.mark,
+                &format!("unexpected character: `{}'", c),
+            )),
             _ => self.fetch_plain_scalar(),
         }
     }
@@ -426,8 +431,9 @@ impl<T: Iterator<Item=char>> Scanner<T> {
 
     fn stale_simple_keys(&mut self) -> ScanResult {
         for sk in &mut self.simple_keys {
-            if sk.possible && (sk.mark.line < self.mark.line
-                || sk.mark.index + 1024 < self.mark.index) {
+            if sk.possible
+                && (sk.mark.line < self.mark.line || sk.mark.index + 1024 < self.mark.index)
+                {
                     if sk.required {
                         return Err(ScanError::new(self.mark, "simple key expect ':'"));
                     }
@@ -448,9 +454,12 @@ impl<T: Iterator<Item=char>> Scanner<T> {
                     self.lookahead(2);
                     self.skip_line();
                     self.allow_simple_key();
+                }
+                '#' => while !is_breakz(self.ch()) {
+                    self.skip();
+                    self.lookahead(1);
                 },
-                '#' => while !is_breakz(self.ch()) { self.skip(); self.lookahead(1); },
-                _ => break
+                _ => break,
             }
         }
     }
@@ -460,7 +469,8 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         self.indent = -1;
         self.stream_start_produced = true;
         self.allow_simple_key();
-        self.tokens.push_back(Token(mark, TokenType::StreamStart(TEncoding::Utf8)));
+        self.tokens
+            .push_back(Token(mark, TokenType::StreamStart(TEncoding::Utf8)));
         self.simple_keys.push(SimpleKey::new(Marker::new(0, 0, 0)));
     }
 
@@ -475,7 +485,8 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         self.remove_simple_key()?;
         self.disallow_simple_key();
 
-        self.tokens.push_back(Token(self.mark, TokenType::StreamEnd));
+        self.tokens
+            .push_back(Token(self.mark, TokenType::StreamEnd));
         Ok(())
     }
 
@@ -833,6 +844,214 @@ impl<T: Iterator<Item=char>> Scanner<T> {
         Ok(())
     }
 
+    fn fetch_flow_scalar(&mut self, single: bool) -> ScanResult {
+        self.save_simple_key()?;
+        self.disallow_simple_key();
+
+        let tok = self.scan_flow_scalar(single)?;
+
+        self.tokens.push_back(tok);
+        Ok(())
+    }
+
+    fn scan_flow_scalar(&mut self, single: bool) -> Result<Token, ScanError> {
+        let start_mark = self.mark;
+
+        let mut string = String::new();
+        let mut leading_break = String::new();
+        let mut trailing_breaks = String::new();
+        let mut whitespaces = String::new();
+        let mut leading_blanks;
+
+        /* Eat the left quote. */
+        self.skip();
+
+        loop {
+            /* Check for a document indicator. */
+            self.lookahead(4);
+
+            if self.mark.col == 0
+                && (((self.buffer[0] == '-') && (self.buffer[1] == '-') && (self.buffer[2] == '-'))
+                || ((self.buffer[0] == '.')
+                && (self.buffer[1] == '.')
+                && (self.buffer[2] == '.')))
+                && is_blankz(self.buffer[3])
+                {
+                    return Err(ScanError::new(
+                        start_mark,
+                        "while scanning a quoted scalar, found unexpected document indicator",
+                    ));
+                }
+
+            if is_z(self.ch()) {
+                return Err(ScanError::new(
+                    start_mark,
+                    "while scanning a quoted scalar, found unexpected end of stream",
+                ));
+            }
+
+            self.lookahead(2);
+
+            leading_blanks = false;
+            // Consume non-blank characters.
+
+            while !is_blankz(self.ch()) {
+                match self.ch() {
+                    // Check for an escaped single quote.
+                    '\'' if self.buffer[1] == '\'' && single => {
+                        string.push('\'');
+                        self.skip();
+                        self.skip();
+                    }
+                    // Check for the right quote.
+                    '\'' if single => break,
+                    '"' if !single => break,
+                    // Check for an escaped line break.
+                    '\\' if !single && is_break(self.buffer[1]) => {
+                        self.lookahead(3);
+                        self.skip();
+                        self.skip_line();
+                        leading_blanks = true;
+                        break;
+                    }
+                    // Check for an escape sequence.
+                    '\\' if !single => {
+                        let mut code_length = 0usize;
+                        match self.buffer[1] {
+                            '0' => string.push('\0'),
+                            'a' => string.push('\x07'),
+                            'b' => string.push('\x08'),
+                            't' | '\t' => string.push('\t'),
+                            'n' => string.push('\n'),
+                            'v' => string.push('\x0b'),
+                            'f' => string.push('\x0c'),
+                            'r' => string.push('\x0d'),
+                            'e' => string.push('\x1b'),
+                            ' ' => string.push('\x20'),
+                            '"' => string.push('"'),
+                            '\'' => string.push('\''),
+                            '\\' => string.push('\\'),
+                            // NEL (#x85)
+                            'N' => string.push(char::from_u32(0x85).unwrap()),
+                            // #xA0
+                            '_' => string.push(char::from_u32(0xA0).unwrap()),
+                            // LS (#x2028)
+                            'L' => string.push(char::from_u32(0x2028).unwrap()),
+                            // PS (#x2029)
+                            'P' => string.push(char::from_u32(0x2029).unwrap()),
+                            'x' => code_length = 2,
+                            'u' => code_length = 4,
+                            'U' => code_length = 8,
+                            _ => {
+                                return Err(ScanError::new(
+                                    start_mark,
+                                    "while parsing a quoted scalar, found unknown escape character",
+                                ))
+                            }
+                        }
+                        self.skip();
+                        self.skip();
+                        // Consume an arbitrary escape code.
+                        if code_length > 0 {
+                            self.lookahead(code_length);
+                            let mut value = 0u32;
+                            for i in 0..code_length {
+                                if !is_hex(self.buffer[i]) {
+                                    return Err(ScanError::new(start_mark,
+                                                              "while parsing a quoted scalar, did not find expected hexdecimal number"));
+                                }
+                                value = (value << 4) + as_hex(self.buffer[i]);
+                            }
+
+                            let ch = match char::from_u32(value) {
+                                Some(v) => v,
+                                None => {
+                                    return Err(ScanError::new(start_mark,
+                                                              "while parsing a quoted scalar, found invalid Unicode character escape code"));
+                                }
+                            };
+                            string.push(ch);
+
+                            for _ in 0..code_length {
+                                self.skip();
+                            }
+                        }
+                    }
+                    c => {
+                        string.push(c);
+                        self.skip();
+                    }
+                }
+                self.lookahead(2);
+            }
+            self.lookahead(1);
+            match self.ch() {
+                '\'' if single => break,
+                '"' if !single => break,
+                _ => {}
+            }
+
+            // Consume blank characters.
+            while is_blank(self.ch()) || is_break(self.ch()) {
+                if is_blank(self.ch()) {
+                    // Consume a space or a tab character.
+                    if leading_blanks {
+                        self.skip();
+                    } else {
+                        whitespaces.push(self.ch());
+                        self.skip();
+                    }
+                } else {
+                    self.lookahead(2);
+                    // Check if it is a first line break.
+                    if leading_blanks {
+                        self.read_break(&mut trailing_breaks);
+                    } else {
+                        whitespaces.clear();
+                        self.read_break(&mut leading_break);
+                        leading_blanks = true;
+                    }
+                }
+                self.lookahead(1);
+            }
+            // Join the whitespaces or fold line breaks.
+            if leading_blanks {
+                if leading_break.is_empty() {
+                    string.push_str(&leading_break);
+                    string.push_str(&trailing_breaks);
+                    trailing_breaks.clear();
+                    leading_break.clear();
+                } else {
+                    if trailing_breaks.is_empty() {
+                        string.push(' ');
+                    } else {
+                        string.push_str(&trailing_breaks);
+                        trailing_breaks.clear();
+                    }
+                    leading_break.clear();
+                }
+            } else {
+                string.push_str(&whitespaces);
+                whitespaces.clear();
+            }
+        } // loop
+
+        // Eat the right quote.
+        self.skip();
+
+        if single {
+            Ok(Token(
+                start_mark,
+                TokenType::Scalar(TScalarStyle::SingleQuoted, string),
+            ))
+        } else {
+            Ok(Token(
+                start_mark,
+                TokenType::Scalar(TScalarStyle::DoubleQuoted, string),
+            ))
+        }
+    }
+
     fn fetch_plain_scalar(&mut self) -> ScanResult {
         self.save_simple_key()?;
         self.disallow_simple_key();
@@ -1055,10 +1274,9 @@ mod test {
 macro_rules! next {
     ($p:ident, $tk:pat) => {{
         let tok = $p.next().unwrap();
-        match tok.1 {
+        match &tok.1 {
             $tk => {},
-            _ => { panic!("unexpected token: {:?}",
-                    tok) }
+            _ => { panic!("unexpected token, left {:?}", tok) }
         }
     }}
 }
@@ -1114,11 +1332,11 @@ macro_rules! end {
 ";
         let mut p = Scanner::new(s.chars());
         next!(p, StreamStart(..));
-        next!(p, Scalar(TScalarStyle::Plain, _));
+        next!(p, Scalar(TScalarStyle::SingleQuoted, _));
         next!(p, DocumentStart);
-        next!(p, Scalar(TScalarStyle::Plain, _));
+        next!(p, Scalar(TScalarStyle::SingleQuoted, _));
         next!(p, DocumentStart);
-        next!(p, Scalar(TScalarStyle::Plain, _));
+        next!(p, Scalar(TScalarStyle::SingleQuoted, _));
         next!(p, StreamEnd);
         end!(p);
     }

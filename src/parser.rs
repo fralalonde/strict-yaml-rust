@@ -31,7 +31,7 @@ pub enum Event {
     DocumentEnd,
     /// Refer to an anchor ID
     /// Value, style, anchor_id, tag
-    Scalar(String, TScalarStyle, usize, Option<TokenType>),
+    Scalar(String, TScalarStyle, usize),
     /// Anchor ID
     SequenceStart(usize),
     SequenceEnd,
@@ -43,11 +43,7 @@ pub enum Event {
 impl Event {
     fn empty_scalar() -> Event {
         // a null scalar
-        Event::Scalar("~".to_owned(), TScalarStyle::Plain, 0, None)
-    }
-
-    fn empty_scalar_with_anchor(anchor: usize, tag: Option<TokenType>) -> Event {
-        Event::Scalar("".to_owned(), TScalarStyle::Plain, anchor, tag)
+        Event::Scalar("".to_owned(), TScalarStyle::Plain, 0)
     }
 }
 
@@ -397,7 +393,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
 
     fn parse_node(&mut self, block: bool, indentless_sequence: bool) -> ParseResult {
         let anchor_id = 0;
-        let tag = None;
         match *self.peek_token()? {
             Token(mark, TokenType::BlockEntry) if indentless_sequence => {
                 self.state = State::IndentlessSequenceEntry;
@@ -406,7 +401,7 @@ impl<T: Iterator<Item=char>> Parser<T> {
             Token(_, TokenType::Scalar(..)) => {
                 self.pop_state();
                 if let Token(mark, TokenType::Scalar(style, v)) = self.fetch_token() {
-                    Ok((Event::Scalar(v, style, anchor_id, tag), mark))
+                    Ok((Event::Scalar(v, style, anchor_id), mark))
                 } else {
                     unreachable!()
                 }
@@ -419,15 +414,6 @@ impl<T: Iterator<Item=char>> Parser<T> {
                 self.state = State::BlockMappingFirstKey;
                 Ok((Event::MappingStart(anchor_id), mark))
             },
-            // ex 7.2, an empty scalar can follow a secondary tag
-            Token(mark, _) if tag.is_some() || anchor_id > 0 => {
-                self.pop_state();
-                Ok((Event::empty_scalar_with_anchor(anchor_id, tag), mark))
-            },
-//            Token(mark, token_type) => Err(ScanError::new(
-//                mark,
-//                &format!("token: {:?} while parsing a node, did not find expected node content", token_type)
-//            )),
             Token(mark, _) => { Err(ScanError::new(mark, "while parsing a node, did not find expected node content")) }
         }
     }
@@ -564,18 +550,18 @@ mod test {
 
     #[test]
     fn test_peek_eq_parse() {
-        let s = "
+        let s = r#"
 a0 bb: val
 a1: &x
-    b1: 4
-    b2: d
+b1: 4
+b2: d
 a2: 4
 a3: [1, 2, 3]
 a4:
     - [a1, a2]
     - 2
 a5: *x
-";
+"#;
         let mut p = Parser::new(s.chars());
         while {
             let event_peek = p.peek().unwrap().clone();

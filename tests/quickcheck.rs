@@ -3,17 +3,17 @@ extern crate strict_yaml_rust;
 extern crate quickcheck;
 
 use quickcheck::TestResult;
-use strict_yaml_rust::{Yaml, YamlLoader, YamlEmitter};
+use strict_yaml_rust::{StrictYaml, StrictYamlLoader, StrictYamlEmitter};
 use std::error::Error;
 
 quickcheck! {
     fn test_check_weird_keys(xs: Vec<String>) -> TestResult {
         let mut out_str = String::new();
         {
-            let mut emitter = YamlEmitter::new(&mut out_str);
-            emitter.dump(&Yaml::Array(xs.into_iter().map(Yaml::String).collect())).unwrap();
+            let mut emitter = StrictYamlEmitter::new(&mut out_str);
+            emitter.dump(&StrictYaml::Array(xs.into_iter().map(StrictYaml::String).collect())).unwrap();
         }
-        if let Err(err) = YamlLoader::load_from_str(&out_str) {
+        if let Err(err) = StrictYamlLoader::load_from_str(&out_str) {
             return TestResult::error(err.description());
         }
         TestResult::passed()
