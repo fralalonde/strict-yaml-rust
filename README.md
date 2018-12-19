@@ -30,7 +30,15 @@ In short, keeping only the parts of YAML that we all know and love.
 For more details, see the original documentation and implementation:
 
  - http://hitchdev.com/strictyaml/
- - https://github.com/crdoconnor/strictyaml 
+ - https://github.com/crdoconnor/strictyaml
+ 
+## Caveats
+
+Missing from this implementation is a 
+[programmatic schema](https://hitchdev.com/strictyaml/using/alpha/howto/either-or-validation/), 
+which would enable document validation and typed value parsing. 
+Seems that you'll still have to parse integers and dates from strings, 
+or [send a PR](https://github.com/fralalonde/strict-yaml-rust/pulls)!
 
 ## Quick Start
 
