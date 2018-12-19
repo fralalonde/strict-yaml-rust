@@ -5,8 +5,8 @@ authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalond
 homepage = "http://fralalonde.github.io/strict-yaml-rust/"
 documentation = "https://docs.rs/crate/strict-yaml-rust/"
 license = "MIT/Apache-2.0"
-description = "A StrictYAML parser obtained by chopping code off the original yaml-rust crate"
-repository = "https://github.com/fralalonde/strict-yaml"
+description = "A StrictYAML parser obtained by savagely chopping up the original yaml-rust crate."
+repository = "https://github.com/fralalonde/strict-yaml-rust"
 # publish = false # this branch contains breaking changes
 
 [dependencies]
