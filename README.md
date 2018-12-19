@@ -59,7 +59,7 @@ git = "https://github.com/fralalonde/strict-yaml-rust.git"
 and import:
 
 ```rust
-extern crate yaml_rust;
+extern crate strict_yaml_rust;
 ```
 
 Use `yaml::StrictYamlLoader` to load the YAML documents and access it
@@ -105,26 +105,21 @@ bar:
 }
 ```
 
-Note that `yaml_rust::Yaml` implements `Index<&'a str>` & `Index<usize>`:
+Note that `strict_yaml_rust::StrictYaml` implements `Index<&'a str>` AND `Index<usize>`:
 
 * `Index<usize>` assumes the container is an Array
 * `Index<&'a str>` assumes the container is a string to value Map
 * otherwise, `Yaml::BadValue` is returned
 
-If your document does not conform to this convention (e.g. map with
-complex type key), you can use the `Yaml::as_XXX` family API to access your
-documents.
-
 ## Features
 
 * Pure Rust
 * Ruby-like Array/Hash access API
-* Low-level YAML events emission
+* Low-level StrictYAML events emission
 
 ## Specification Compliance
 
-This implementation aims to provide StrictYAML parser fully compatible with
-the StrictYAML specification. 
+This implementation aims to provide StrictYAML parser fully compatible with the StrictYAML specification. 
 
 ## License
 
