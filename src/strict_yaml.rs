@@ -54,7 +54,6 @@ impl fmt::Display for StoreError {
         match self {
             StoreError::RepeatedHashKey => {
                 write!(formatter, "Key already exists in the hash map")},
-            _ => write!(formatter, "")
         }
     }
 }
@@ -87,25 +86,25 @@ impl MarkedEventReceiver for StrictYamlLoader {
                     _ => unreachable!(),
                 }
                 Ok(())
-            }
+            },
             Event::SequenceStart(aid) => {
                 self.doc_stack.push((StrictYaml::Array(Vec::new()), aid));
                 Ok(())
-            }
+            },
             Event::SequenceEnd => {
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node)
-            }
+            },
             Event::MappingStart(aid) => {
                 self.doc_stack.push((StrictYaml::Hash(Hash::new()), aid));
                 self.key_stack.push(StrictYaml::BadValue);
                 Ok(())
-            }
+            },
             Event::MappingEnd => {
                 self.key_stack.pop().unwrap();
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node)
-            }
+            },
             Event::Scalar(v, style, aid) => {
                 let node = if style != TScalarStyle::Plain {
                     StrictYaml::String(v)
@@ -115,8 +114,7 @@ impl MarkedEventReceiver for StrictYamlLoader {
                 };
 
                 self.insert_new_node((node, aid))
-            }
-
+            },
             _ => { Ok(()) /* ignore */ }
         };
         
