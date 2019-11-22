@@ -363,7 +363,7 @@ a4:
         let s = r#"
 cataloge:
   product: "&coffee   { name: Coffee,    price: 2.5  ,  unit: 1l  }"
-  product: "&cookies  { name: Cookies!,  price: 3.40 ,  unit: 400g}"
+  product2: "&cookies  { name: Cookies!,  price: 3.40 ,  unit: 400g}"
 
 products:
   *coffee:

@@ -4,6 +4,8 @@ use std::string;
 use std::str;
 use std::mem;
 use std::vec;
+use std::fmt;
+use std::error::Error;
 use parser::*;
 use scanner::{TScalarStyle, ScanError, Marker};
 use linked_hash_map::LinkedHashMap;
@@ -42,6 +44,21 @@ pub enum StrictYaml {
     BadValue,
 }
 
+#[derive(Clone, PartialEq, Debug, Eq)]
+enum StoreError { RepeatedHashKey }
+
+impl Error for StoreError {}
+
+impl fmt::Display for StoreError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StoreError::RepeatedHashKey => {
+                write!(formatter, "Key already exists in the hash map")},
+            _ => write!(formatter, "")
+        }
+    }
+}
+
 pub type Array = Vec<StrictYaml>;
 pub type Hash = LinkedHashMap<StrictYaml, StrictYaml>;
 
@@ -55,10 +72,11 @@ pub struct StrictYamlLoader {
 }
 
 impl MarkedEventReceiver for StrictYamlLoader {
-    fn on_event(&mut self, ev: Event, _: Marker) {
+    fn on_event(&mut self, ev: Event, mark: Marker) -> Result<(), ScanError> {
         // println!("EV {:?}", ev);
-        match ev {
+        let res = match ev {
             Event::DocumentStart => {
+                Ok(())
                 // do nothing
             },
             Event::DocumentEnd => {
@@ -68,22 +86,25 @@ impl MarkedEventReceiver for StrictYamlLoader {
                     1 => self.docs.push(self.doc_stack.pop().unwrap().0),
                     _ => unreachable!(),
                 }
+                Ok(())
             }
             Event::SequenceStart(aid) => {
                 self.doc_stack.push((StrictYaml::Array(Vec::new()), aid));
+                Ok(())
             }
             Event::SequenceEnd => {
                 let node = self.doc_stack.pop().unwrap();
-                self.insert_new_node(node);
+                self.insert_new_node(node)
             }
             Event::MappingStart(aid) => {
                 self.doc_stack.push((StrictYaml::Hash(Hash::new()), aid));
                 self.key_stack.push(StrictYaml::BadValue);
+                Ok(())
             }
             Event::MappingEnd => {
                 self.key_stack.pop().unwrap();
                 let node = self.doc_stack.pop().unwrap();
-                self.insert_new_node(node);
+                self.insert_new_node(node)
             }
             Event::Scalar(v, style, aid) => {
                 let node = if style != TScalarStyle::Plain {
@@ -93,17 +114,20 @@ impl MarkedEventReceiver for StrictYamlLoader {
                     StrictYaml::from_str(&v)
                 };
 
-                self.insert_new_node((node, aid));
+                self.insert_new_node((node, aid))
             }
 
-            _ => { /* ignore */ }
-        }
+            _ => { Ok(()) /* ignore */ }
+        };
+        
+        res.map_err(|e| ScanError::new(mark, &format!("Error handling node: {}", e)))
+
         // println!("DOC {:?}", self.doc_stack);
     }
 }
 
 impl StrictYamlLoader {
-    fn insert_new_node(&mut self, node: (StrictYaml, usize)) {
+    fn insert_new_node(&mut self, node: (StrictYaml, usize)) -> Result<(), StoreError> {
         // valid anchor id starts from 1
         if node.1 > 0 {
             self.anchor_map.insert(node.1, node.0.clone());
@@ -112,10 +136,12 @@ impl StrictYamlLoader {
             self.doc_stack.push(node);
         } else {
             let parent = self.doc_stack.last_mut().unwrap();
+            println!("{:?}, {:?}", parent, node);
             match *parent {
                 (StrictYaml::Array(ref mut v), _) => v.push(node.0),
                 (StrictYaml::Hash(ref mut h), _) => {
                     let cur_key = self.key_stack.last_mut().unwrap();
+
                     // current node is a key
                     if cur_key.is_badvalue() {
                         *cur_key = node.0;
@@ -123,12 +149,19 @@ impl StrictYamlLoader {
                     } else {
                         let mut newkey = StrictYaml::BadValue;
                         mem::swap(&mut newkey, cur_key);
-                        h.insert(newkey, node.0);
+
+                        if h.contains_key(&newkey) {
+                            return Err(StoreError::RepeatedHashKey);
+                        } else {
+                            h.insert(newkey, node.0);
+                        }
                     }
                 },
                 _ => unreachable!(),
             }
         }
+
+        Ok(())
     }
 
     pub fn load_from_str(source: &str) -> Result<Vec<StrictYaml>, ScanError>{
@@ -442,6 +475,18 @@ c: ~
         assert_eq!(Some((StrictYaml::String("a".to_owned()), StrictYaml::String("~".to_owned()))), iter.next());
         assert_eq!(Some((StrictYaml::String("c".to_owned()), StrictYaml::String("~".to_owned()))), iter.next());
         assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn test_duplicate_keys() {
+        let s = "
+a: 10
+a: 15
+";
+        let out = StrictYamlLoader::load_from_str(&s);
+        assert!(out.is_err());
+        //assert_eq!(out.err(), Actual error type);
+
     }
 
 }
