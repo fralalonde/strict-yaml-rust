@@ -134,7 +134,6 @@ impl StrictYamlLoader {
             self.doc_stack.push(node);
         } else {
             let parent = self.doc_stack.last_mut().unwrap();
-            println!("{:?}, {:?}", parent, node);
             match *parent {
                 (StrictYaml::Array(ref mut v), _) => v.push(node.0),
                 (StrictYaml::Hash(ref mut h), _) => {
