@@ -10,18 +10,7 @@ pub enum EmitError {
     BadHashmapKey,
 }
 
-impl Error for EmitError {
-    fn description(&self) -> &str {
-        match *self {
-            EmitError::FmtError(ref err) => err.description(),
-            EmitError::BadHashmapKey => "bad hashmap key",
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        None
-    }
-}
+impl Error for EmitError {}
 
 impl Display for EmitError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -39,7 +28,7 @@ impl From<fmt::Error> for EmitError {
 }
 
 pub struct StrictYamlEmitter<'a> {
-    writer: &'a mut fmt::Write,
+    writer: &'a mut dyn fmt::Write,
     best_indent: usize,
     compact: bool,
 
@@ -49,7 +38,7 @@ pub struct StrictYamlEmitter<'a> {
 pub type EmitResult = Result<(), EmitError>;
 
 // from serialize::json
-fn escape_str(wr: &mut fmt::Write, v: &str) -> Result<(), fmt::Error> {
+fn escape_str(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
     wr.write_str("\"")?;
     let mut start = 0;
 
@@ -111,7 +100,7 @@ fn escape_str(wr: &mut fmt::Write, v: &str) -> Result<(), fmt::Error> {
 }
 
 impl<'a> StrictYamlEmitter<'a> {
-    pub fn new(writer: &'a mut fmt::Write) -> StrictYamlEmitter {
+    pub fn new(writer: &'a mut dyn fmt::Write) -> StrictYamlEmitter {
         StrictYamlEmitter {
             writer,
             best_indent: 2,
@@ -296,12 +285,12 @@ fn need_quotes(string: &str) -> bool {
         | '\"'
         | '\''
         | '\\'
-        | '\0'...'\x06'
+        | '\0'..='\x06'
         | '\t'
         | '\n'
         | '\r'
-        | '\x0e'...'\x1a'
-        | '\x1c'...'\x1f' => true,
+        | '\x0e'..='\x1a'
+        | '\x1c'..='\x1f' => true,
         _ => false,
     })
         || [

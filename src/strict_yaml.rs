@@ -107,6 +107,7 @@ impl MarkedEventReceiver for StrictYamlLoader {
             },
             Event::Scalar(v, style, aid) => {
                 let node = if style != TScalarStyle::Plain {
+                    println!("String: {}", v);
                     StrictYaml::String(v)
                 } else {
                     // Datatype is not specified, or unrecognized
@@ -162,6 +163,7 @@ impl StrictYamlLoader {
     }
 
     pub fn load_from_str(source: &str) -> Result<Vec<StrictYaml>, ScanError>{
+
         let mut loader = StrictYamlLoader {
             docs: Vec::new(),
             doc_stack: Vec::new(),

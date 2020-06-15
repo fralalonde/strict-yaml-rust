@@ -347,7 +347,7 @@ impl<T: Iterator<Item=char>> Parser<T> {
 
     fn _explict_document_start(&mut self) -> ParseResult {
         self.parser_process_directives()?;
-        match *try!(self.peek_token()) {
+        match *self.peek_token()? {
             Token(mark, TokenType::DocumentStart) => {
                 self.push_state(State::DocumentEnd);
                 self.state = State::DocumentContent;

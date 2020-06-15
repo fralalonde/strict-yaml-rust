@@ -1,12 +1,11 @@
 extern crate strict_yaml_rust;
 
 use std::env;
-use std::fs::{File, read_to_string};
+use std::fs::read_to_string;
 
-use std::io;
 use strict_yaml_rust::strict_yaml;
 
-pub type Result<T> = ::std::result::Result<T, Box<::std::error::Error>>;
+pub type Result<T> = ::std::result::Result<T, Box<dyn (::std::error::Error)>>;
 
 fn print_indent(indent: usize) {
     for _ in 0..indent {
