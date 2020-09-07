@@ -336,8 +336,6 @@ a4:
             let mut emitter = StrictYamlEmitter::new(&mut writer);
             emitter.dump(doc).unwrap();
         }
-        println!("original:\n{}", s);
-        println!("emitted:\n{}", writer);
         let docs_new = match StrictYamlLoader::load_from_str(&writer) {
             Ok(y) => y,
             Err(e) => panic!(format!("{}", e))

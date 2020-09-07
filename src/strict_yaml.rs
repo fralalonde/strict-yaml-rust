@@ -107,7 +107,6 @@ impl MarkedEventReceiver for StrictYamlLoader {
             },
             Event::Scalar(v, style, aid) => {
                 let node = if style != TScalarStyle::Plain {
-                    println!("String: {}", v);
                     StrictYaml::String(v)
                 } else {
                     // Datatype is not specified, or unrecognized
