@@ -4,7 +4,6 @@ extern crate quickcheck;
 
 use quickcheck::TestResult;
 use strict_yaml_rust::{StrictYaml, StrictYamlLoader, StrictYamlEmitter};
-use std::error::Error;
 
 quickcheck! {
     fn test_check_weird_keys(xs: Vec<String>) -> TestResult {
@@ -14,7 +13,7 @@ quickcheck! {
             emitter.dump(&StrictYaml::Array(xs.into_iter().map(StrictYaml::String).collect())).unwrap();
         }
         if let Err(err) = StrictYamlLoader::load_from_str(&out_str) {
-            return TestResult::error(err.description());
+            return TestResult::error(format!("{}", err));
         }
         TestResult::passed()
     }
