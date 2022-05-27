@@ -1,5 +1,4 @@
 use scanner::*;
-use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq, Debug, Eq)]
 enum State {
@@ -52,14 +51,8 @@ pub struct Parser<T> {
     scanner: Scanner<T>,
     states: Vec<State>,
     state: State,
-    // FIXME strict yaml doesnt have marks
-    marks: Vec<Marker>,
     token: Option<Token>,
     current: Option<(Event, Marker)>,
-    // FIXME strict yaml doesnt have anchors
-    anchors: HashMap<String, usize>,
-    // FIXME strict yaml doesnt have anchors
-    anchor_id: usize,
 }
 
 pub trait EventReceiver {
@@ -84,13 +77,8 @@ impl<T: Iterator<Item = char>> Parser<T> {
             scanner: Scanner::new(src),
             states: Vec::new(),
             state: State::StreamStart,
-            marks: Vec::new(),
             token: None,
             current: None,
-
-            anchors: HashMap::new(),
-            // valid anchor_id starts from 1
-            anchor_id: 1,
         }
     }
 
@@ -180,8 +168,6 @@ impl<T: Iterator<Item = char>> Parser<T> {
                 recv.on_event(ev, mark)?;
                 return Ok(());
             }
-            // clear anchors before a new document
-            self.anchors.clear();
             self.load_document(ev, mark, recv)?;
             if !multi {
                 break;

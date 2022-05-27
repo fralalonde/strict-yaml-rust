@@ -245,6 +245,9 @@ impl<'a> StrictYamlEmitter<'a> {
 }
 
 /// Check if the string requires quoting.
+/// This is UNCHANGED for strict-yaml to remain a subset of regular YAML.
+/// i.e. under strict YAML "False" will always be string quoted or not but this is not true
+/// if parsed by a full YAML parser.
 /// Strings starting with any of the following characters must be quoted.
 /// :, &, *, ?, |, -, <, >, =, !, %, @
 /// Strings containing any of the following characters must be quoted.
@@ -265,21 +268,27 @@ fn need_quotes(string: &str) -> bool {
 
     string.is_empty()
         || need_quotes_spaces(string)
-        || string.starts_with(|character: char| matches!( character,
-            '&' | '*' | '?' | '|' | '-' | '<' | '>' | '=' | '!' | '%' | '@' ))
-        || string.contains(|character: char| matches!(character,
+        || string.starts_with(|character: char| {
+            matches!(
+                character,
+                '&' | '*' | '?' | '|' | '-' | '<' | '>' | '=' | '!' | '%' | '@'
+            )
+        })
+        || string.contains(|character: char| {
+            matches!(character,
             ':' | '{' | '}' | '[' | ']' | ',' | '#' | '`' | '\"' | '\'' | '\\'
-            | '\0'..='\x06' | '\t' | '\n' | '\r' | '\x0e'..='\x1a' | '\x1c'..='\x1f'))
+            | '\0'..='\x06' | '\t' | '\n' | '\r' | '\x0e'..='\x1a' | '\x1c'..='\x1f')
+        })
         || [
-        // http://yaml.org/type/bool.html
-        // Note: 'y', 'Y', 'n', 'N', is not quoted deliberately, as in libyaml. PyYAML also parse
-        // them as string, not booleans, although it is volating the YAML 1.1 specification.
-        // See https://github.com/dtolnay/serde-yaml/pull/83#discussion_r152628088.
-        "yes", "Yes", "YES", "no", "No", "NO", "True", "TRUE", "true", "False", "FALSE",
-        "false", "on", "On", "ON", "off", "Off", "OFF",
-        // http://yaml.org/type/null.html
-        "null", "Null", "NULL", "~",
-    ]
+            // http://yaml.org/type/bool.html
+            // Note: 'y', 'Y', 'n', 'N', is not quoted deliberately, as in libyaml. PyYAML also parse
+            // them as string, not booleans, although it is volating the YAML 1.1 specification.
+            // See https://github.com/dtolnay/serde-yaml/pull/83#discussion_r152628088.
+            "yes", "Yes", "YES", "no", "No", "NO", "True", "TRUE", "true", "False", "FALSE",
+            "false", "on", "On", "ON", "off", "Off", "OFF",
+            // http://yaml.org/type/null.html
+            "null", "Null", "NULL", "~",
+        ]
         .contains(&string)
         || string.starts_with('.')
         || string.parse::<i64>().is_ok()

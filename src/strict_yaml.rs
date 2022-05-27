@@ -1,7 +1,6 @@
 use linked_hash_map::LinkedHashMap;
 use parser::*;
 use scanner::{Marker, ScanError, TScalarStyle};
-use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt;
 use std::mem;
@@ -70,7 +69,6 @@ pub struct StrictYamlLoader {
     // (current node, anchor_id) tuple
     doc_stack: Vec<(StrictYaml, usize)>,
     key_stack: Vec<StrictYaml>,
-    anchor_map: BTreeMap<usize, StrictYaml>,
 }
 
 impl MarkedEventReceiver for StrictYamlLoader {
@@ -132,9 +130,6 @@ impl MarkedEventReceiver for StrictYamlLoader {
 impl StrictYamlLoader {
     fn insert_new_node(&mut self, node: (StrictYaml, usize)) -> Result<(), StoreError> {
         // valid anchor id starts from 1
-        if node.1 > 0 {
-            self.anchor_map.insert(node.1, node.0.clone());
-        }
         if self.doc_stack.is_empty() {
             self.doc_stack.push(node);
         } else {
@@ -171,7 +166,6 @@ impl StrictYamlLoader {
             docs: Vec::new(),
             doc_stack: Vec::new(),
             key_stack: Vec::new(),
-            anchor_map: BTreeMap::new(),
         };
         let mut parser = Parser::new(source.chars());
         parser.load(&mut loader, true)?;

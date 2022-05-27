@@ -240,7 +240,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         }
     }
     #[inline]
-    fn skip(&mut self) {
+    fn skip_char(&mut self) {
         let c = self.buffer.pop_front().unwrap();
 
         self.mark.index += 1;
@@ -251,15 +251,17 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             self.mark.col += 1;
         }
     }
+
     #[inline]
     fn skip_line(&mut self) {
         if self.buffer[0] == '\r' && self.buffer[1] == '\n' {
-            self.skip();
-            self.skip();
+            self.skip_char();
+            self.skip_char();
         } else if is_break(self.buffer[0]) {
-            self.skip();
+            self.skip_char();
         }
     }
+
     #[inline]
     fn ch(&self) -> char {
         self.buffer[0]
@@ -285,19 +287,21 @@ impl<T: Iterator<Item = char>> Scanner<T> {
     pub fn mark(&self) -> Marker {
         self.mark
     }
+
     #[inline]
     fn read_break(&mut self, s: &mut String) {
         if self.buffer[0] == '\r' && self.buffer[1] == '\n' {
             s.push('\n');
-            self.skip();
-            self.skip();
+            self.skip_char();
+            self.skip_char();
         } else if self.buffer[0] == '\r' || self.buffer[0] == '\n' {
             s.push('\n');
-            self.skip();
+            self.skip_char();
         } else {
             unreachable!();
         }
     }
+
     fn insert_token(&mut self, pos: usize, tok: Token) {
         let old_len = self.tokens.len();
         assert!(pos <= old_len);
@@ -306,6 +310,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             self.tokens.swap(old_len - i, old_len - i - 1);
         }
     }
+
     fn allow_simple_key(&mut self) {
         self.simple_key_allowed = true;
     }
@@ -446,8 +451,8 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             self.lookahead(1);
             // TODO(chenyh) BOM
             match self.ch() {
-                ' ' => self.skip(),
-                '\t' if !self.simple_key_allowed => self.skip(),
+                ' ' => self.skip_char(),
+                '\t' if !self.simple_key_allowed => self.skip_char(),
                 '\n' | '\r' => {
                     self.lookahead(2);
                     self.skip_line();
@@ -455,7 +460,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 }
                 '#' => {
                     while !is_breakz(self.ch()) {
-                        self.skip();
+                        self.skip_char();
                         self.lookahead(1);
                     }
                 }
@@ -505,7 +510,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
     fn scan_directive(&mut self) -> Result<Token, ScanError> {
         let start_mark = self.mark;
-        self.skip();
+        self.skip_char();
 
         let name = self.scan_directive_name()?;
         let tok = match name.as_ref() {
@@ -515,7 +520,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 // skip current line
                 self.lookahead(1);
                 while !is_breakz(self.ch()) {
-                    self.skip();
+                    self.skip_char();
                     self.lookahead(1);
                 }
                 // XXX return an empty TagDirective token
@@ -530,13 +535,13 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         self.lookahead(1);
 
         while is_blank(self.ch()) {
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
         }
 
         if self.ch() == '#' {
             while !is_breakz(self.ch()) {
-                self.skip();
+                self.skip_char();
                 self.lookahead(1);
             }
         }
@@ -561,7 +566,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         self.lookahead(1);
 
         while is_blank(self.ch()) {
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
         }
 
@@ -574,7 +579,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             ));
         }
 
-        self.skip();
+        self.skip_char();
 
         let minor = self.scan_version_directive_number(mark)?;
 
@@ -587,7 +592,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         self.lookahead(1);
         while is_alpha(self.ch()) {
             string.push(self.ch());
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
         }
 
@@ -621,7 +626,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             }
             length += 1;
             val = val * 10 + ((self.ch() as u32) - ('0' as u32));
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
         }
 
@@ -651,7 +656,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         self.allow_simple_key();
 
         let start_mark = self.mark;
-        self.skip();
+        self.skip_char();
 
         self.tokens
             .push_back(Token(start_mark, TokenType::BlockEntry));
@@ -665,9 +670,9 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
         let mark = self.mark;
 
-        self.skip();
-        self.skip();
-        self.skip();
+        self.skip_char();
+        self.skip_char();
+        self.skip_char();
 
         self.tokens.push_back(Token(mark, t));
         Ok(())
@@ -695,7 +700,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         let mut trailing_breaks = String::new();
 
         // skip '|' or '>'
-        self.skip();
+        self.skip_char();
         self.lookahead(1);
 
         if self.ch() == '+' || self.ch() == '-' {
@@ -704,7 +709,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             } else {
                 chomping = -1;
             }
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
             if is_digit(self.ch()) {
                 if self.ch() == '0' {
@@ -714,7 +719,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                     ));
                 }
                 increment = (self.ch() as usize) - ('0' as usize);
-                self.skip();
+                self.skip_char();
             }
         } else if is_digit(self.ch()) {
             if self.ch() == '0' {
@@ -725,7 +730,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             }
 
             increment = (self.ch() as usize) - ('0' as usize);
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
             if self.ch() == '+' || self.ch() == '-' {
                 if self.ch() == '+' {
@@ -733,7 +738,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 } else {
                     chomping = -1;
                 }
-                self.skip();
+                self.skip_char();
             }
         }
 
@@ -741,13 +746,13 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         self.lookahead(1);
 
         while is_blank(self.ch()) {
-            self.skip();
+            self.skip_char();
             self.lookahead(1);
         }
 
         if self.ch() == '#' {
             while !is_breakz(self.ch()) {
-                self.skip();
+                self.skip_char();
                 self.lookahead(1);
             }
         }
@@ -799,7 +804,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
             while !is_breakz(self.ch()) {
                 string.push(self.ch());
-                self.skip();
+                self.skip_char();
                 self.lookahead(1);
             }
             // break on EOF
@@ -841,7 +846,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         loop {
             self.lookahead(1);
             while (*indent == 0 || self.mark.col < *indent) && self.buffer[0] == ' ' {
-                self.skip();
+                self.skip_char();
                 self.lookahead(1);
             }
 
@@ -896,7 +901,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         let mut leading_blanks;
 
         /* Eat the left quote. */
-        self.skip();
+        self.skip_char();
 
         loop {
             /* Check for a document indicator. */
@@ -932,8 +937,8 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                     // Check for an escaped single quote.
                     '\'' if self.buffer[1] == '\'' && single => {
                         string.push('\'');
-                        self.skip();
-                        self.skip();
+                        self.skip_char();
+                        self.skip_char();
                     }
                     // Check for the right quote.
                     '\'' if single => break,
@@ -941,7 +946,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                     // Check for an escaped line break.
                     '\\' if !single && is_break(self.buffer[1]) => {
                         self.lookahead(3);
-                        self.skip();
+                        self.skip_char();
                         self.skip_line();
                         leading_blanks = true;
                         break;
@@ -981,8 +986,8 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                                 ))
                             }
                         }
-                        self.skip();
-                        self.skip();
+                        self.skip_char();
+                        self.skip_char();
                         // Consume an arbitrary escape code.
                         if code_length > 0 {
                             self.lookahead(code_length);
@@ -1005,13 +1010,13 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                             string.push(ch);
 
                             for _ in 0..code_length {
-                                self.skip();
+                                self.skip_char();
                             }
                         }
                     }
                     c => {
                         string.push(c);
-                        self.skip();
+                        self.skip_char();
                     }
                 }
                 self.lookahead(2);
@@ -1028,10 +1033,10 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 if is_blank(self.ch()) {
                     // Consume a space or a tab character.
                     if leading_blanks {
-                        self.skip();
+                        self.skip_char();
                     } else {
                         whitespaces.push(self.ch());
-                        self.skip();
+                        self.skip_char();
                     }
                 } else {
                     self.lookahead(2);
@@ -1069,7 +1074,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         } // loop
 
         // Eat the right quote.
-        self.skip();
+        self.skip_char();
 
         if single {
             Ok(Token(
@@ -1152,7 +1157,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 }
 
                 string.push(self.ch());
-                self.skip();
+                self.skip_char();
                 self.lookahead(2);
             }
             // is the end?
@@ -1171,10 +1176,10 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                     }
 
                     if leading_blanks {
-                        self.skip();
+                        self.skip_char();
                     } else {
                         whitespaces.push(self.ch());
-                        self.skip();
+                        self.skip_char();
                     }
                 } else {
                     self.lookahead(2);
@@ -1226,7 +1231,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
         self.allow_simple_key();
 
-        self.skip();
+        self.skip_char();
         self.tokens.push_back(Token(start_mark, TokenType::Key));
         Ok(())
     }
@@ -1268,7 +1273,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
             self.allow_simple_key();
         }
-        self.skip();
+        self.skip_char();
         self.tokens.push_back(Token(start_mark, TokenType::Value));
 
         Ok(())
