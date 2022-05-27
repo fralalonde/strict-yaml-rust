@@ -1,6 +1,6 @@
 [package]
 name = "strict-yaml-rust"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>"]
 homepage = "http://fralalonde.github.io/strict-yaml-rust/"
 documentation = "https://docs.rs/crate/strict-yaml-rust/"
@@ -13,4 +13,4 @@ repository = "https://github.com/fralalonde/strict-yaml-rust"
 linked-hash-map = "0.5"
 
 [dev-dependencies]
-quickcheck = "0.7"
+quickcheck = "0.9"

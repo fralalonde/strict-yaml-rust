@@ -1,14 +1,14 @@
-use std::collections::BTreeMap;
-use std::ops::Index;
-use std::string;
-use std::str;
-use std::mem;
-use std::vec;
-use std::fmt;
-use std::error::Error;
-use parser::*;
-use scanner::{TScalarStyle, ScanError, Marker};
 use linked_hash_map::LinkedHashMap;
+use parser::*;
+use scanner::{Marker, ScanError, TScalarStyle};
+use std::collections::BTreeMap;
+use std::error::Error;
+use std::fmt;
+use std::mem;
+use std::ops::Index;
+use std::str;
+use std::string;
+use std::vec;
 
 /// A YAML node is stored as this `Yaml` enumeration, which provides an easy way to
 /// access your YAML document.
@@ -45,7 +45,9 @@ pub enum StrictYaml {
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]
-enum StoreError { RepeatedHashKey }
+enum StoreError {
+    RepeatedHashKey,
+}
 
 impl Error for StoreError {}
 
@@ -53,7 +55,8 @@ impl fmt::Display for StoreError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             StoreError::RepeatedHashKey => {
-                write!(formatter, "Key already exists in the hash map")},
+                write!(formatter, "Key already exists in the hash map")
+            }
         }
     }
 }
@@ -77,7 +80,7 @@ impl MarkedEventReceiver for StrictYamlLoader {
             Event::DocumentStart => {
                 Ok(())
                 // do nothing
-            },
+            }
             Event::DocumentEnd => {
                 match self.doc_stack.len() {
                     // empty document
@@ -86,25 +89,25 @@ impl MarkedEventReceiver for StrictYamlLoader {
                     _ => unreachable!(),
                 }
                 Ok(())
-            },
+            }
             Event::SequenceStart(aid) => {
                 self.doc_stack.push((StrictYaml::Array(Vec::new()), aid));
                 Ok(())
-            },
+            }
             Event::SequenceEnd => {
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node)
-            },
+            }
             Event::MappingStart(aid) => {
                 self.doc_stack.push((StrictYaml::Hash(Hash::new()), aid));
                 self.key_stack.push(StrictYaml::BadValue);
                 Ok(())
-            },
+            }
             Event::MappingEnd => {
                 self.key_stack.pop().unwrap();
                 let node = self.doc_stack.pop().unwrap();
                 self.insert_new_node(node)
-            },
+            }
             Event::Scalar(v, style, aid) => {
                 let node = if style != TScalarStyle::Plain {
                     StrictYaml::String(v)
@@ -114,10 +117,12 @@ impl MarkedEventReceiver for StrictYamlLoader {
                 };
 
                 self.insert_new_node((node, aid))
-            },
-            _ => { Ok(()) /* ignore */ }
+            }
+            _ => {
+                Ok(()) /* ignore */
+            }
         };
-        
+
         res.map_err(|e| ScanError::new(mark, &format!("Error handling node: {}", e)))
 
         // println!("DOC {:?}", self.doc_stack);
@@ -153,7 +158,7 @@ impl StrictYamlLoader {
                             h.insert(newkey, node.0);
                         }
                     }
-                },
+                }
                 _ => unreachable!(),
             }
         }
@@ -161,8 +166,7 @@ impl StrictYamlLoader {
         Ok(())
     }
 
-    pub fn load_from_str(source: &str) -> Result<Vec<StrictYaml>, ScanError>{
-
+    pub fn load_from_str(source: &str) -> Result<Vec<StrictYaml>, ScanError> {
         let mut loader = StrictYamlLoader {
             docs: Vec::new(),
             doc_stack: Vec::new(),
@@ -207,17 +211,11 @@ impl StrictYaml {
     define_into!(into_vec, Array, Array);
 
     pub fn is_badvalue(&self) -> bool {
-        match *self {
-            StrictYaml::BadValue => true,
-            _ => false
-        }
+        matches!(*self, StrictYaml::BadValue)
     }
 
     pub fn is_array(&self) -> bool {
-        match *self {
-            StrictYaml::Array(_) => true,
-            _ => false
-        }
+        matches!(*self, StrictYaml::Array(_))
     }
 }
 
@@ -236,7 +234,7 @@ impl<'a> Index<&'a str> for StrictYaml {
         let key = StrictYaml::String(idx.to_owned());
         match self.as_hash() {
             Some(h) => h.get(&key).unwrap_or(&BAD_VALUE),
-            None => &BAD_VALUE
+            None => &BAD_VALUE,
         }
     }
 }
@@ -246,7 +244,7 @@ impl Index<usize> for StrictYaml {
 
     fn index(&self, idx: usize) -> &StrictYaml {
         if let Some(v) = self.as_vec() {
-            return v.get(idx).unwrap_or(&BAD_VALUE)
+            return v.get(idx).unwrap_or(&BAD_VALUE);
         }
         &BAD_VALUE
     }
@@ -258,8 +256,7 @@ impl IntoIterator for StrictYaml {
 
     fn into_iter(self) -> Self::IntoIter {
         YamlIter {
-            yaml: self.into_vec()
-                .unwrap_or_else(Vec::new).into_iter()
+            yaml: self.into_vec().unwrap_or_default().into_iter(),
         }
     }
 }
@@ -279,7 +276,7 @@ impl Iterator for YamlIter {
 #[cfg(test)]
 mod test {
     use strict_yaml::*;
-        #[test]
+    #[test]
     fn test_coerce() {
         let s = "---
 a: 1
@@ -299,7 +296,10 @@ c: [1, 2]
         let s: String = "".to_owned();
         StrictYamlLoader::load_from_str(&s).unwrap();
         let s: String = "---".to_owned();
-        assert_eq!(StrictYamlLoader::load_from_str(&s).unwrap()[0], StrictYaml::String("".to_owned()));
+        assert_eq!(
+            StrictYamlLoader::load_from_str(&s).unwrap()[0],
+            StrictYaml::String("".to_owned())
+        );
     }
 
     #[test]
@@ -319,7 +319,8 @@ a4:
 a5: 'single_quoted'
 a6: \"double_quoted\"
 a7: 你好
-".to_owned();
+"
+        .to_owned();
         let out = StrictYamlLoader::load_from_str(&s).unwrap();
         let doc = &out[0];
         assert_eq!(doc["a7"].as_str().unwrap(), "你好");
@@ -327,8 +328,7 @@ a7: 你好
 
     #[test]
     fn test_multi_doc() {
-        let s =
-"
+        let s = "
 'a scalar'
 ---
 'a scalar'
@@ -341,8 +341,7 @@ a7: 你好
 
     #[test]
     fn test_plain_datatype() {
-        let s =
-"
+        let s = "
 - 'string'
 - \"string\"
 - string
@@ -405,9 +404,18 @@ a7: 你好
     #[test]
     fn test_bad_docstart() {
         assert!(StrictYamlLoader::load_from_str("---This used to cause an infinite loop").is_ok());
-        assert_eq!(StrictYamlLoader::load_from_str("----"), Ok(vec![StrictYaml::String(String::from("----"))]));
-        assert_eq!(StrictYamlLoader::load_from_str("--- #here goes a comment"), Ok(vec![StrictYaml::String("".to_owned())]));
-        assert_eq!(StrictYamlLoader::load_from_str("---- #here goes a comment"), Ok(vec![StrictYaml::String(String::from("----"))]));
+        assert_eq!(
+            StrictYamlLoader::load_from_str("----"),
+            Ok(vec![StrictYaml::String(String::from("----"))])
+        );
+        assert_eq!(
+            StrictYamlLoader::load_from_str("--- #here goes a comment"),
+            Ok(vec![StrictYaml::String("".to_owned())])
+        );
+        assert_eq!(
+            StrictYamlLoader::load_from_str("---- #here goes a comment"),
+            Ok(vec![StrictYaml::String(String::from("----"))])
+        );
     }
 
     #[test]
@@ -469,9 +477,27 @@ c: ~
         let out = StrictYamlLoader::load_from_str(&s).unwrap();
         let first = out.into_iter().next().unwrap();
         let mut iter = first.into_hash().unwrap().into_iter();
-        assert_eq!(Some((StrictYaml::String("b".to_owned()), StrictYaml::String("~".to_owned()))), iter.next());
-        assert_eq!(Some((StrictYaml::String("a".to_owned()), StrictYaml::String("~".to_owned()))), iter.next());
-        assert_eq!(Some((StrictYaml::String("c".to_owned()), StrictYaml::String("~".to_owned()))), iter.next());
+        assert_eq!(
+            Some((
+                StrictYaml::String("b".to_owned()),
+                StrictYaml::String("~".to_owned())
+            )),
+            iter.next()
+        );
+        assert_eq!(
+            Some((
+                StrictYaml::String("a".to_owned()),
+                StrictYaml::String("~".to_owned())
+            )),
+            iter.next()
+        );
+        assert_eq!(
+            Some((
+                StrictYaml::String("c".to_owned()),
+                StrictYaml::String("~".to_owned())
+            )),
+            iter.next()
+        );
         assert_eq!(None, iter.next());
     }
 
@@ -484,7 +510,5 @@ a: 15
         let out = StrictYamlLoader::load_from_str(&s);
         assert!(out.is_err());
         //assert_eq!(out.err(), Actual error type);
-
     }
-
 }

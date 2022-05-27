@@ -38,7 +38,6 @@
 
 #![doc(html_root_url = "https://docs.rs/strict-yaml-rust/0.1.0")]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
-#![cfg_attr(feature = "cargo-clippy", warn(cyclomatic_complexity))]
 #![cfg_attr(
     feature = "cargo-clippy",
     allow(match_same_arms, should_implement_trait)
@@ -52,9 +51,9 @@ pub mod scanner;
 pub mod strict_yaml;
 
 // reexport key APIs
-pub use scanner::ScanError;
 pub use emitter::{EmitError, StrictYamlEmitter};
 pub use parser::Event;
+pub use scanner::ScanError;
 pub use strict_yaml::{StrictYaml, StrictYamlLoader};
 
 #[cfg(test)]
@@ -63,8 +62,7 @@ mod tests {
 
     #[test]
     fn test_api() {
-        let s =
-"
+        let s = "
 # from yaml-cpp example
 - name: Ogre
   position: [0, 5, 0]
@@ -109,8 +107,7 @@ mod tests {
 
     #[test]
     fn test_fail() {
-        let s =
-"
+        let s = "
 # syntax error
 scalar
 key: [1, 2]]
@@ -119,5 +116,4 @@ key1:a2
         assert!(StrictYamlLoader::load_from_str(s).is_err());
         assert!(try_fail(s).is_err());
     }
-
 }

@@ -3,7 +3,6 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use strict_yaml::{Hash, StrictYaml};
 
-
 #[derive(Copy, Clone, Debug)]
 pub enum EmitError {
     FmtError(fmt::Error),
@@ -169,7 +168,7 @@ impl<'a> StrictYamlEmitter<'a> {
             self.level += 1;
             for (cnt, x) in v.iter().enumerate() {
                 if cnt > 0 {
-                    write!(self.writer, "\n")?;
+                    writeln!(self.writer)?;
                     self.write_indent()?;
                 }
                 write!(self.writer, "-")?;
@@ -186,10 +185,7 @@ impl<'a> StrictYamlEmitter<'a> {
         } else {
             self.level += 1;
             for (cnt, (k, v)) in h.iter().enumerate() {
-                let complex_key = match *k {
-                    StrictYaml::Hash(_) | StrictYaml::Array(_) => true,
-                    _ => false,
-                };
+                let complex_key = matches!(*k, StrictYaml::Hash(_) | StrictYaml::Array(_));
                 if cnt > 0 {
                     writeln!(self.writer)?;
                     self.write_indent()?;
@@ -228,7 +224,7 @@ impl<'a> StrictYamlEmitter<'a> {
                     self.level -= 1;
                 }
                 self.emit_array(v)
-            },
+            }
             StrictYaml::Hash(ref h) => {
                 if (inline && self.compact) || h.is_empty() {
                     write!(self.writer, " ")?;
@@ -239,7 +235,7 @@ impl<'a> StrictYamlEmitter<'a> {
                     self.level -= 1;
                 }
                 self.emit_hash(h)
-            },
+            }
             _ => {
                 write!(self.writer, " ")?;
                 self.emit_node(val)
@@ -267,32 +263,13 @@ fn need_quotes(string: &str) -> bool {
         string.starts_with(' ') || string.ends_with(' ')
     }
 
-    string == ""
+    string.is_empty()
         || need_quotes_spaces(string)
-        || string.starts_with(|character: char| match character {
-        '&' | '*' | '?' | '|' | '-' | '<' | '>' | '=' | '!' | '%' | '@' => true,
-        _ => false,
-    })
-        || string.contains(|character: char| match character {
-        ':'
-        | '{'
-        | '}'
-        | '['
-        | ']'
-        | ','
-        | '#'
-        | '`'
-        | '\"'
-        | '\''
-        | '\\'
-        | '\0'..='\x06'
-        | '\t'
-        | '\n'
-        | '\r'
-        | '\x0e'..='\x1a'
-        | '\x1c'..='\x1f' => true,
-        _ => false,
-    })
+        || string.starts_with(|character: char| matches!( character,
+            '&' | '*' | '?' | '|' | '-' | '<' | '>' | '=' | '!' | '%' | '@' ))
+        || string.contains(|character: char| matches!(character,
+            ':' | '{' | '}' | '[' | ']' | ',' | '#' | '`' | '\"' | '\'' | '\\'
+            | '\0'..='\x06' | '\t' | '\n' | '\r' | '\x0e'..='\x1a' | '\x1c'..='\x1f'))
         || [
         // http://yaml.org/type/bool.html
         // Note: 'y', 'Y', 'n', 'N', is not quoted deliberately, as in libyaml. PyYAML also parse
@@ -308,7 +285,6 @@ fn need_quotes(string: &str) -> bool {
         || string.parse::<i64>().is_ok()
         || string.parse::<f64>().is_ok()
 }
-
 
 #[cfg(test)]
 mod test {
@@ -338,7 +314,7 @@ a4:
         }
         let docs_new = match StrictYamlLoader::load_from_str(&writer) {
             Ok(y) => y,
-            Err(e) => panic!(format!("{}", e))
+            Err(e) => panic!("{}", e),
         };
         let doc_new = &docs_new[0];
 
@@ -431,16 +407,17 @@ z: string with spaces"#;
 
     #[test]
     fn test_empty_and_nested() {
-      test_empty_and_nested_flag(false)
+        test_empty_and_nested_flag(false)
     }
 
     #[test]
     fn test_empty_and_nested_compact() {
-      test_empty_and_nested_flag(true)
+        test_empty_and_nested_flag(true)
     }
 
     fn test_empty_and_nested_flag(compact: bool) {
-        let s = if compact { r#"---
+        let s = if compact {
+            r#"---
 a:
   b:
     c: hello
@@ -448,7 +425,9 @@ a:
 e:
   - f
   - g
-  - h: []"# } else { r#"---
+  - h: []"#
+        } else {
+            r#"---
 a:
   b:
     c: hello
@@ -457,7 +436,8 @@ e:
   - f
   - g
   -
-    h: []"# };
+    h: []"#
+        };
 
         let docs = StrictYamlLoader::load_from_str(&s).unwrap();
         let doc = &docs[0];
@@ -540,5 +520,4 @@ a:
 
         assert_eq!(s, writer);
     }
-
 }
