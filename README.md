@@ -56,22 +56,13 @@ or
 git = "https://github.com/fralalonde/strict-yaml-rust.git"
 ```
 
-and import:
+Use `StrictYamlLoader` to load the YAML documents, access it as Vec/HashMap and finally print it to `stdout` via `StrictYamlEmitter`:
 
 ```rust
-extern crate strict_yaml_rust;
-```
-
-Use `yaml::StrictYamlLoader` to load the YAML documents and access it
-as Vec/HashMap:
-
-```rust
-extern crate strict_yaml_rust;
-use strict_yaml_rust::{StrictYamlLoader, StrictYamlEmitter};
+use strict_yaml_rust::{StrictYamlEmitter, StrictYamlLoader};
 
 fn main() {
-    let s =
-"
+    let s = "
 foo:
     - list1
     - list2
@@ -97,10 +88,12 @@ bar:
 
     // Dump the YAML object
     let mut out_str = String::new();
+
     {
         let mut emitter = StrictYamlEmitter::new(&mut out_str);
         emitter.dump(doc).unwrap(); // dump the YAML object to a String
     }
+
     println!("{}", out_str);
 }
 ```
