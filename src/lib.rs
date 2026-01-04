@@ -36,25 +36,16 @@
 //!
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/strict-yaml-rust/0.1.0")]
-#![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
-#![cfg_attr(
-    feature = "cargo-clippy",
-    allow(match_same_arms, should_implement_trait)
-)]
-
-extern crate linked_hash_map;
-
 pub mod emitter;
 pub mod parser;
 pub mod scanner;
 pub mod strict_yaml;
 
 // reexport key APIs
-pub use emitter::{EmitError, StrictYamlEmitter};
-pub use parser::Event;
-pub use scanner::ScanError;
-pub use strict_yaml::{StrictYaml, StrictYamlLoader};
+pub use crate::emitter::{EmitError, StrictYamlEmitter};
+pub use crate::parser::Event;
+pub use crate::scanner::ScanError;
+pub use crate::strict_yaml::{StrictYaml, StrictYamlLoader};
 
 #[cfg(test)]
 mod tests {

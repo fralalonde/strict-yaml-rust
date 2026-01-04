@@ -1,4 +1,4 @@
-use scanner::*;
+use crate::scanner::*;
 
 #[derive(Clone, Copy, PartialEq, Debug, Eq)]
 enum State {
@@ -92,6 +92,7 @@ impl<T: Iterator<Item = char>> Parser<T> {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> ParseResult {
         match self.current {
             None => self.parse(),

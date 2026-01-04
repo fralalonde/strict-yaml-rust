@@ -1,8 +1,4 @@
-extern crate strict_yaml_rust;
-#[macro_use]
-extern crate quickcheck;
-
-use quickcheck::TestResult;
+use quickcheck::{quickcheck, TestResult};
 use strict_yaml_rust::{StrictYaml, StrictYamlEmitter, StrictYamlLoader};
 
 quickcheck! {

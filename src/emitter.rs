@@ -1,7 +1,7 @@
+use crate::{strict_yaml::Hash, StrictYaml};
 use std::convert::From;
 use std::error::Error;
 use std::fmt::{self, Display};
-use strict_yaml::{Hash, StrictYaml};
 
 #[derive(Copy, Clone, Debug)]
 pub enum EmitError {
@@ -99,7 +99,7 @@ fn escape_str(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
 }
 
 impl<'a> StrictYamlEmitter<'a> {
-    pub fn new(writer: &'a mut dyn fmt::Write) -> StrictYamlEmitter {
+    pub fn new(writer: &'a mut dyn fmt::Write) -> StrictYamlEmitter<'a> {
         StrictYamlEmitter {
             writer,
             best_indent: 2,
@@ -298,7 +298,7 @@ fn need_quotes(string: &str) -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
-    use StrictYamlLoader;
+    use crate::StrictYamlLoader;
 
     #[test]
     fn test_emit_simple() {

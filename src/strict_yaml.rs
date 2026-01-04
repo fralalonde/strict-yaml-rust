@@ -1,6 +1,6 @@
+use crate::parser::*;
+use crate::scanner::{Marker, ScanError, TScalarStyle};
 use linked_hash_map::LinkedHashMap;
-use parser::*;
-use scanner::{Marker, ScanError, TScalarStyle};
 use std::error::Error;
 use std::fmt;
 use std::mem;
@@ -213,8 +213,8 @@ impl StrictYaml {
     }
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(should_implement_trait))]
 impl StrictYaml {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(v: &str) -> StrictYaml {
         StrictYaml::String(v.to_owned())
     }
@@ -269,7 +269,8 @@ impl Iterator for YamlIter {
 
 #[cfg(test)]
 mod test {
-    use strict_yaml::*;
+    use crate::strict_yaml::*;
+
     #[test]
     fn test_coerce() {
         let s = "---
