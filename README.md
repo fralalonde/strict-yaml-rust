@@ -83,7 +83,7 @@ bar:
     assert_eq!(doc["bar"][1].as_str().unwrap(), "2.0");
 
     // Chained key/array access is checked and won't panic,
-    // return BadValue if they are not exist.
+    // return BadValue if a key does not exist.
     assert!(doc["INVALID_KEY"][100].is_badvalue());
 
     // Dump the YAML object
