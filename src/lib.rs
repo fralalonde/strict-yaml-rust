@@ -8,18 +8,9 @@
 //! This crate is [on github](https://github.com/fralalonde/strict-yaml-rust) and can be
 //! used by adding `strict-yaml` to the dependencies in your project's `Cargo.toml`.
 //!
-//! ```toml
-//! [dependencies.strict-yaml]
-//! git = "https://github.com/fralalonde/strict-yaml-rust.git"
+//! ```sh
+//! cargo add strict-yaml-rust
 //! ```
-//!
-//! And this in your crate root:
-//!
-//! ```rust
-//! extern crate strict_yaml_rust;
-//! ```
-//!
-//! Parse a string into `Vec<Yaml>` and then serialize it as a YAML string.
 //!
 //! # Examples
 //!
