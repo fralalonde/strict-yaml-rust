@@ -1,4 +1,4 @@
-use quickcheck::{quickcheck, TestResult};
+use quickcheck::{TestResult, quickcheck};
 use strict_yaml_rust::{StrictYaml, StrictYamlEmitter, StrictYamlLoader};
 
 quickcheck! {

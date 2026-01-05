@@ -1,4 +1,4 @@
-use crate::{strict_yaml::Hash, StrictYaml};
+use crate::strict_yaml::{Hash, StrictYaml};
 use std::convert::From;
 use std::error::Error;
 use std::fmt::{self, Display};

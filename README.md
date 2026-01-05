@@ -3,17 +3,8 @@ strict-yaml-rust
 A [StrictYAML](http://hitchdev.com/strictyaml/) implementation for Rust 
 obtained by savagely chopping off code from [yaml-rust](https://crates.io/crates/yaml-rust).
 
-[![Build Status](https://travis-ci.org/fralalonde/strict-yaml-rust.svg?branch=master)](https://travis-ci.org/fralalonde/strict-yaml-rust)
-[![Build status](https://ci.appveyor.com/api/projects/status/scf47535ckp4ylg4?svg=true)](https://ci.appveyor.com/project/fralalonde/strict-yaml-rust)
 [![license](https://img.shields.io/crates/l/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
 [![version](https://img.shields.io/crates/v/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
-
-This crate was originally started as feature-gated (`#[cfg(feature)]`) fork of the original.
-
-Making it standalone allows to use both implementations (full _and_ strict) from the same app, with confidence that the documents 
-expected to be StrictYAML compliant will _not_ be parsed as full YAML by mistake.
-
-**Mad props** going to the original crate author, [Chen Yuheng](https://github.com/chyh1990).
 
 ## What is StrictYAML?
 

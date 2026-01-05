@@ -14,4 +14,4 @@ repository = "https://github.com/fralalonde/strict-yaml-rust"
 linked-hash-map = "0.5"
 
 [dev-dependencies]
-quickcheck = "0.9"
+quickcheck = "1.0"

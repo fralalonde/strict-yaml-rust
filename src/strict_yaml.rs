@@ -6,7 +6,6 @@ use std::fmt;
 use std::mem;
 use std::ops::Index;
 use std::str;
-use std::string;
 use std::vec;
 
 /// A YAML node is stored as this `Yaml` enumeration, which provides an easy way to
@@ -28,14 +27,14 @@ use std::vec;
 #[derive(Clone, PartialEq, PartialOrd, Debug, Eq, Ord, Hash)]
 pub enum StrictYaml {
     /// YAML scalar.
-    String(string::String),
+    String(String),
 
     /// YAML array, can be accessed as a `Vec`.
-    Array(self::Array),
+    Array(Array),
 
     /// YAML hash, can be accessed as a `LinkedHashMap`.
     /// Iteration order will match the order of insertion into the map.
-    Hash(self::Hash),
+    Hash(Hash),
 
     /// Accessing a nonexistent node via the Index trait returns `BadValue`. This
     /// simplifies error handling in the calling code. Invalid type conversion also
@@ -213,8 +212,8 @@ impl StrictYaml {
     }
 }
 
+#[allow(clippy::should_implement_trait)]
 impl StrictYaml {
-    #[allow(clippy::should_implement_trait)]
     pub fn from_str(v: &str) -> StrictYaml {
         StrictYaml::String(v.to_owned())
     }
@@ -270,7 +269,6 @@ impl Iterator for YamlIter {
 #[cfg(test)]
 mod test {
     use crate::strict_yaml::*;
-
     #[test]
     fn test_coerce() {
         let s = "---

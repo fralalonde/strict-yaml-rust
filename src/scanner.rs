@@ -848,8 +848,10 @@ impl<T: Iterator<Item = char>> Scanner<T> {
 
             // Check for a tab character messing the intendation.
             if (*indent == 0 || self.mark.col < *indent) && self.buffer[0] == '\t' {
-                return Err(ScanError::new(self.mark,
-                        "while scanning a block scalar, found a tab character where an intendation space is expected"));
+                return Err(ScanError::new(
+                    self.mark,
+                    "while scanning a block scalar, found a tab character where an intendation space is expected",
+                ));
             }
 
             if !is_break(self.ch()) {
@@ -975,7 +977,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                                 return Err(ScanError::new(
                                     start_mark,
                                     "while parsing a quoted scalar, found unknown escape character",
-                                ))
+                                ));
                             }
                         }
                         self.skip_char();
@@ -986,8 +988,10 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                             let mut value = 0u32;
                             for i in 0..code_length {
                                 if !self.buffer[i].is_ascii_hexdigit() {
-                                    return Err(ScanError::new(start_mark,
-                                                              "while parsing a quoted scalar, did not find expected hexdecimal number"));
+                                    return Err(ScanError::new(
+                                        start_mark,
+                                        "while parsing a quoted scalar, did not find expected hexdecimal number",
+                                    ));
                                 }
                                 value = (value << 4) + as_hex(self.buffer[i]);
                             }
@@ -995,8 +999,10 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                             let ch = match char::from_u32(value) {
                                 Some(v) => v,
                                 None => {
-                                    return Err(ScanError::new(start_mark,
-                                                              "while parsing a quoted scalar, found invalid Unicode character escape code"));
+                                    return Err(ScanError::new(
+                                        start_mark,
+                                        "while parsing a quoted scalar, found invalid Unicode character escape code",
+                                    ));
                                 }
                             };
                             string.push(ch);
