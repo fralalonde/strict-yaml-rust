@@ -182,16 +182,8 @@ fn is_blankz(c: char) -> bool {
     is_blank(c) || is_breakz(c)
 }
 #[inline]
-fn is_digit(c: char) -> bool {
-    ('0'..='9').contains(&c)
-}
-#[inline]
 fn is_alpha(c: char) -> bool {
     matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '_' | '-')
-}
-#[inline]
-fn is_hex(c: char) -> bool {
-    ('0'..='9').contains(&c) || ('a'..='f').contains(&c) || ('A'..='F').contains(&c)
 }
 #[inline]
 fn as_hex(c: char) -> u32 {
@@ -617,7 +609,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         let mut val = 0u32;
         let mut length = 0usize;
         self.lookahead(1);
-        while is_digit(self.ch()) {
+        while self.ch().is_ascii_digit() {
             if length + 1 > 9 {
                 return Err(ScanError::new(
                     *mark,
@@ -711,7 +703,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
             }
             self.skip_char();
             self.lookahead(1);
-            if is_digit(self.ch()) {
+            if self.ch().is_ascii_digit() {
                 if self.ch() == '0' {
                     return Err(ScanError::new(
                         start_mark,
@@ -721,7 +713,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                 increment = (self.ch() as usize) - ('0' as usize);
                 self.skip_char();
             }
-        } else if is_digit(self.ch()) {
+        } else if self.ch().is_ascii_digit() {
             if self.ch() == '0' {
                 return Err(ScanError::new(
                     start_mark,
@@ -993,7 +985,7 @@ impl<T: Iterator<Item = char>> Scanner<T> {
                             self.lookahead(code_length);
                             let mut value = 0u32;
                             for i in 0..code_length {
-                                if !is_hex(self.buffer[i]) {
+                                if !self.buffer[i].is_ascii_hexdigit() {
                                     return Err(ScanError::new(start_mark,
                                                               "while parsing a quoted scalar, did not find expected hexdecimal number"));
                                 }

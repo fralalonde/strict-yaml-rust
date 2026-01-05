@@ -56,22 +56,13 @@ or
 git = "https://github.com/fralalonde/strict-yaml-rust.git"
 ```
 
-and import:
+Use `StrictYamlLoader` to load the YAML documents, access it as Vec/HashMap and finally print it to `stdout` via `StrictYamlEmitter`:
 
 ```rust
-extern crate strict_yaml_rust;
-```
-
-Use `yaml::StrictYamlLoader` to load the YAML documents and access it
-as Vec/HashMap:
-
-```rust
-extern crate strict_yaml_rust;
-use strict_yaml_rust::{StrictYamlLoader, StrictYamlEmitter};
+use strict_yaml_rust::{StrictYamlEmitter, StrictYamlLoader};
 
 fn main() {
-    let s =
-"
+    let s = "
 foo:
     - list1
     - list2
@@ -92,15 +83,17 @@ bar:
     assert_eq!(doc["bar"][1].as_str().unwrap(), "2.0");
 
     // Chained key/array access is checked and won't panic,
-    // return BadValue if they are not exist.
+    // return BadValue if a key does not exist.
     assert!(doc["INVALID_KEY"][100].is_badvalue());
 
     // Dump the YAML object
     let mut out_str = String::new();
+
     {
         let mut emitter = StrictYamlEmitter::new(&mut out_str);
         emitter.dump(doc).unwrap(); // dump the YAML object to a String
     }
+
     println!("{}", out_str);
 }
 ```
