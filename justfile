@@ -6,7 +6,7 @@ all: format test examples lint
 
 # Unit and doc tests
 test:
-	cargo test
+	cargo test --features serde
 
 examples:
 	cargo build --examples

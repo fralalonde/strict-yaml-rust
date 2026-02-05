@@ -12,6 +12,11 @@ repository = "https://github.com/fralalonde/strict-yaml-rust"
 
 [dependencies]
 linked-hash-map = "0.5"
+serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]
 quickcheck = "1.0"
+serde = { version = "1", features = ["derive"] }
+
+[features]
+serde = ["dep:serde", "linked-hash-map/serde_impl"]
