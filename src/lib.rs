@@ -24,12 +24,18 @@
 //! let mut out_str = String::new();
 //! let mut emitter = StrictYamlEmitter::new(&mut out_str);
 //! emitter.dump(doc).unwrap(); // dump the YAML object to a String
-//!
 //! ```
+//!
+//! # Serde
+//!
+//! The crate also provides a [`serde`](https://serde.rs) implementation. The functions
+//! in the [`serde`](module@crate::serde) module can be enabled with the `serde` feature flag.
 
 pub mod emitter;
 pub mod parser;
 pub mod scanner;
+#[cfg(feature = "serde")]
+pub mod serde;
 pub mod strict_yaml;
 
 // reexport key APIs

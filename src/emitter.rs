@@ -27,17 +27,17 @@ impl From<fmt::Error> for EmitError {
 }
 
 pub struct StrictYamlEmitter<'a> {
-    writer: &'a mut dyn fmt::Write,
+    pub(crate) writer: &'a mut dyn fmt::Write,
     best_indent: usize,
     compact: bool,
 
-    level: isize,
+    pub(crate) level: isize,
 }
 
 pub type EmitResult = Result<(), EmitError>;
 
 // from serialize::json
-fn escape_str(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
+pub(crate) fn escape_str(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
     wr.write_str("\"")?;
     let mut start = 0;
 
@@ -132,7 +132,7 @@ impl<'a> StrictYamlEmitter<'a> {
         self.emit_node(doc)
     }
 
-    fn write_indent(&mut self) -> EmitResult {
+    pub(crate) fn write_indent(&mut self) -> EmitResult {
         if self.level <= 0 {
             return Ok(());
         }
@@ -261,7 +261,7 @@ impl<'a> StrictYamlEmitter<'a> {
 /// * When the string is null or ~ (otherwise, it would be considered as a null value);
 /// * When the string looks like a number, such as integers (e.g. 2, 14, etc.), floats (e.g. 2.6, 14.9) and exponential numbers (e.g. 12e7, etc.) (otherwise, it would be treated as a numeric value);
 /// * When the string looks like a date (e.g. 2014-12-31) (otherwise it would be automatically converted into a Unix timestamp).
-fn need_quotes(string: &str) -> bool {
+pub(crate) fn need_quotes(string: &str) -> bool {
     fn need_quotes_spaces(string: &str) -> bool {
         string.starts_with(' ') || string.ends_with(' ')
     }
