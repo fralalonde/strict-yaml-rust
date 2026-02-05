@@ -3,6 +3,8 @@ strict-yaml-rust
 A [StrictYAML](http://hitchdev.com/strictyaml/) implementation for Rust 
 obtained by savagely chopping off code from [yaml-rust](https://crates.io/crates/yaml-rust).
 
+Now with built-in `serde` support as an optional feature! (@puetzp)
+
 [![license](https://img.shields.io/crates/l/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
 [![version](https://img.shields.io/crates/v/strict-yaml-rust.svg)](https://crates.io/crates/strict-yaml-rust/)
 

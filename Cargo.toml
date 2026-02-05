@@ -1,6 +1,6 @@
 [package]
 name = "strict-yaml-rust"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>"]
 homepage = "http://fralalonde.github.io/strict-yaml-rust/"
