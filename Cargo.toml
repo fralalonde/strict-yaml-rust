@@ -3,7 +3,6 @@ name = "strict-yaml-rust"
 version = "0.2.0"
 edition = "2024"
 authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>"]
-homepage = "http://fralalonde.github.io/strict-yaml-rust/"
 documentation = "https://docs.rs/crate/strict-yaml-rust/"
 license = "MIT/Apache-2.0"
 description = "A StrictYAML parser obtained by savagely chopping up the original yaml-rust crate."
@@ -20,3 +19,6 @@ serde = { version = "1", features = ["derive"] }
 
 [features]
 serde = ["dep:serde", "linked-hash-map/serde_impl"]
+
+[package.metadata.docs.rs]
+all-features = true
