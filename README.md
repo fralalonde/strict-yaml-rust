@@ -39,7 +39,7 @@ Add the following to the Cargo.toml of your project:
 
 ```toml
 [dependencies]
-strict-yaml-rust = "0.1"
+strict-yaml-rust = "0.2"
 ```
 
 or
