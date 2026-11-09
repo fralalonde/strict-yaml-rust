@@ -1,8 +1,8 @@
 [package]
 name = "strict-yaml-rust"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
-authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>"]
+authors = ["Yuheng Chen <yuhengchen@sensetime.com>", "Francis Lalonde <fralalonde@gmail.com>", "PPuetz <ppuetz@protonmail.com>"]
 documentation = "https://docs.rs/crate/strict-yaml-rust/"
 license = "MIT/Apache-2.0"
 description = "A StrictYAML parser obtained by savagely chopping up the original yaml-rust crate."
