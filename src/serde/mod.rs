@@ -20,7 +20,7 @@ mod test {
     use super::*;
     use crate::strict_yaml::StrictYaml;
     use serde::{Deserialize, Serialize};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     #[test]
     fn test_primitive_de_ser() {
@@ -582,6 +582,19 @@ a:
 "#;
 
         let yaml = from_str::<StrictYaml>(input).unwrap();
+
+        assert_eq!(input, to_string(&yaml).unwrap());
+    }
+
+    #[test]
+    fn test_mixed_map_and_array_de_ser() {
+        let input = r#"---
+-
+- first: foobar
+  second: barfoo
+"#;
+
+        let yaml = from_str::<Vec<BTreeMap<String, String>>>(input).unwrap();
 
         assert_eq!(input, to_string(&yaml).unwrap());
     }

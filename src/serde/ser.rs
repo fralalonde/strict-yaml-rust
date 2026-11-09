@@ -219,7 +219,7 @@ fn write_str<T: fmt::Display>(
 ) -> Result<(), Error> {
     let s = v.to_string();
 
-    if serializer.scope == Some(Scope::Key) {
+    if serializer.scope == Some(Scope::Key) || serializer.scope == Some(Scope::Seq) {
         serializer.emitter.writer.write_char(' ')?;
     }
 
@@ -401,6 +401,8 @@ impl ser::Serializer for &'_ mut Serializer<'_> {
         // sequence and the key/variant follows a dash `-`.
         if self.scope != Some(Scope::Seq) {
             self.emitter.write_indent()?;
+        } else {
+            self.emitter.writer.write_char(' ')?;
         }
 
         // Serialize the variant as if it were a key in a regular
@@ -490,12 +492,12 @@ impl ser::Serializer for &'_ mut Serializer<'_> {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         self.emitter.level += 1;
 
         // When the map is nested inside another map the preceding
         // key must first be followed by a newline.
-        if self.scope == Some(Scope::Key) {
+        if self.scope == Some(Scope::Key) || (self.scope == Some(Scope::Seq) && len == Some(0)) {
             writeln!(self.emitter.writer)?;
         }
 
@@ -529,6 +531,8 @@ impl ser::Serializer for &'_ mut Serializer<'_> {
         // sequence and the key/variant follows a dash `-`.
         if self.scope != Some(Scope::Seq) {
             self.emitter.write_indent()?;
+        } else {
+            self.emitter.writer.write_char(' ')?;
         }
 
         // Serialize the variant as if it were a key in a regular
@@ -572,10 +576,11 @@ impl SerializeSeq for &'_ mut Serializer<'_> {
             if self.scope != Some(Scope::Seq) {
                 self.emitter.write_indent()?;
             } else {
+                self.emitter.writer.write_char(' ')?;
                 self.scope = None;
             }
 
-            write!(self.emitter.writer, "- ")?;
+            write!(self.emitter.writer, "-")?;
 
             let mut old_scope = self.scope.replace(Scope::Seq);
             value.serialize(&mut **self)?;
@@ -621,10 +626,11 @@ impl SerializeTuple for &'_ mut Serializer<'_> {
             if self.scope != Some(Scope::Seq) {
                 self.emitter.write_indent()?;
             } else {
+                self.emitter.writer.write_char(' ')?;
                 self.scope = None;
             }
 
-            write!(self.emitter.writer, "- ")?;
+            write!(self.emitter.writer, "-")?;
 
             let mut old_scope = self.scope.replace(Scope::Seq);
             value.serialize(&mut **self)?;
@@ -670,10 +676,11 @@ impl SerializeTupleStruct for &'_ mut Serializer<'_> {
             if self.scope != Some(Scope::Seq) {
                 self.emitter.write_indent()?;
             } else {
+                self.emitter.writer.write_char(' ')?;
                 self.scope = None;
             }
 
-            write!(self.emitter.writer, "- ")?;
+            write!(self.emitter.writer, "-")?;
 
             let mut old_scope = self.scope.replace(Scope::Seq);
             value.serialize(&mut **self)?;
@@ -719,10 +726,11 @@ impl SerializeTupleVariant for &'_ mut Serializer<'_> {
             if self.scope != Some(Scope::Seq) {
                 self.emitter.write_indent()?;
             } else {
+                self.emitter.writer.write_char(' ')?;
                 self.scope = None;
             }
 
-            write!(self.emitter.writer, "- ")?;
+            write!(self.emitter.writer, "-")?;
 
             let mut old_scope = self.scope.replace(Scope::Seq);
             value.serialize(&mut **self)?;
@@ -756,6 +764,7 @@ impl SerializeMap for &'_ mut Serializer<'_> {
         if self.scope != Some(Scope::Seq) {
             self.emitter.write_indent()?;
         } else {
+            self.emitter.writer.write_char(' ')?;
             self.scope = None;
         }
 
@@ -797,6 +806,7 @@ impl SerializeStruct for &'_ mut Serializer<'_> {
         if self.scope != Some(Scope::Seq) {
             self.emitter.write_indent()?;
         } else {
+            self.emitter.writer.write_char(' ')?;
             self.scope = None;
         }
 
@@ -832,6 +842,7 @@ impl SerializeStructVariant for &'_ mut Serializer<'_> {
         if self.scope != Some(Scope::Seq) {
             self.emitter.write_indent()?;
         } else {
+            self.emitter.writer.write_char(' ')?;
             self.scope = None;
         }
 
