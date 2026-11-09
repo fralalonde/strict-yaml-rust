@@ -1,5 +1,5 @@
 use crate::{
-    emitter::{StrictYamlEmitter, escape_str, need_quotes},
+    emitter::{escape_str, need_quotes, StrictYamlEmitter},
     serde::error::Error,
     strict_yaml::{self, StrictYaml},
 };
@@ -424,7 +424,7 @@ impl ser::Serializer for &'_ mut Serializer<'_> {
         Ok(v)
     }
 
-    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         // Unless the values in the sequence are serialized as
         // multiple documents (as indicated by `self.scope`), empty
         // sequences are serialized without any value.
@@ -435,7 +435,7 @@ impl ser::Serializer for &'_ mut Serializer<'_> {
         // A newline must come before a sequence when the sequence
         // follows a map key. In contrast a sequence that is nested in
         // another sequence is started on the same line following the dash `-`.
-        if self.scope == Some(Scope::Key) {
+        if self.scope == Some(Scope::Key) || (self.scope == Some(Scope::Seq) && len == Some(0)) {
             writeln!(self.emitter.writer)?;
         }
 

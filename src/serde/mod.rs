@@ -594,8 +594,39 @@ a:
   second: barfoo
 "#;
 
+        let mut expected = vec![BTreeMap::new()];
+
+        {
+            let mut map = BTreeMap::new();
+            map.insert("first".to_string(), "foobar".to_string());
+            map.insert("second".to_string(), "barfoo".to_string());
+            expected.push(map);
+        }
+
         let yaml = from_str::<Vec<BTreeMap<String, String>>>(input).unwrap();
 
+        assert_eq!(expected, yaml);
+        assert_eq!(input, to_string(&expected).unwrap());
+    }
+
+    #[test]
+    fn test_empty_nested_array_de_ser() {
+        let input = r#"---
+- - foobar
+  - barfoo
+-
+- - foobar
+"#;
+
+        let expected = vec![
+            vec!["foobar".to_string(), "barfoo".to_string()],
+            vec![],
+            vec!["foobar".to_string()],
+        ];
+
+        let yaml = from_str::<Vec<Vec<String>>>(input).unwrap();
+
+        assert_eq!(expected, yaml);
         assert_eq!(input, to_string(&yaml).unwrap());
     }
 
