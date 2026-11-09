@@ -1,5 +1,5 @@
 use crate::{
-    emitter::{escape_str, need_quotes, StrictYamlEmitter},
+    emitter::{StrictYamlEmitter, escape_str, need_quotes},
     serde::error::Error,
     strict_yaml::{self, StrictYaml},
 };
