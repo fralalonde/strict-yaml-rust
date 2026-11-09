@@ -660,14 +660,22 @@ impl<'de> serde::de::Deserializer<'de> for &mut Deserializer<'de> {
         // Also empty sequences can be deserialized from empty scalars.
         // An additional boolean flag indicates to `ArrayAccess` to
         // return early in such cases.
-        let value = match ev {
+        let value = match &ev {
             Event::SequenceStart(_) => visitor
                 .visit_seq(ArrayAccess::new(self, false))
                 .map_err(|err: Error| err + mark)?,
-            Event::Scalar(_, _, _) => {
-                return Ok(visitor
-                    .visit_seq(ArrayAccess::new(self, true))
-                    .map_err(|err: Error| err + mark)?)
+            Event::Scalar(value, _, _) => {
+                if value.is_empty() {
+                    return Ok(visitor
+                        .visit_seq(ArrayAccess::new(self, true))
+                        .map_err(|err: Error| err + mark)?);
+                } else {
+                    return Err(Error::from_event(
+                        ev,
+                        mark,
+                        "a sequence or no value to indicate an empty sequence",
+                    ));
+                }
             }
             Event::StreamStart if self.is_root.is_some() => visitor
                 .visit_seq(ArrayAccess::new(self, false))
@@ -723,14 +731,22 @@ impl<'de> serde::de::Deserializer<'de> for &mut Deserializer<'de> {
     {
         let (ev, mark) = self.parser.next()?;
 
-        let value = match ev {
+        let value = match &ev {
             Event::MappingStart(_) => visitor
                 .visit_map(HashAccess::new(self, false))
                 .map_err(|err: Error| err + mark)?,
-            Event::Scalar(_, _, _) => {
-                return Ok(visitor
-                    .visit_map(HashAccess::new(self, true))
-                    .map_err(|err: Error| err + mark)?)
+            Event::Scalar(value, _, _) => {
+                if value.is_empty() {
+                    return Ok(visitor
+                        .visit_map(HashAccess::new(self, true))
+                        .map_err(|err: Error| err + mark)?);
+                } else {
+                    return Err(Error::from_event(
+                        ev,
+                        mark,
+                        "a mapping or no value to indicate an empty mapping",
+                    ));
+                }
             }
             _ => return Err(Error::from_event(ev, mark, "the start of a mapping")),
         };

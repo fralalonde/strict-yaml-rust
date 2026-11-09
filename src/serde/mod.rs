@@ -232,6 +232,39 @@ i:
     }
 
     #[test]
+    fn test_struct_de_ser_fail() {
+        {
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Test {
+                #[serde(rename = "a")]
+                _a: Vec<usize>,
+            }
+
+            let input = r#"---
+a: "foobar"
+"#;
+
+            assert!(from_str::<Test>(input).is_err());
+        }
+
+        {
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Test {
+                #[serde(rename = "a")]
+                _a: HashMap<String, String>,
+            }
+
+            let input = r#"---
+a: "foobar"
+"#;
+
+            assert!(from_str::<Test>(input).is_err());
+        }
+    }
+
+    #[test]
     fn test_complex_struct_de_ser() {
         #[derive(Debug, Deserialize, PartialEq, Serialize)]
         struct Test {
