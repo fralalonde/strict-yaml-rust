@@ -292,7 +292,7 @@ impl SerializeMap for SerializeHash {
             None => {
                 return Err(Error::Message(
                     "serialize_value called before serialize_key".to_string(),
-                ))
+                ));
             }
         };
 

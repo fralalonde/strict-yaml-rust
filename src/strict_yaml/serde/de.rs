@@ -3,9 +3,8 @@ use crate::{
     strict_yaml::{Hash, StrictYaml},
 };
 use serde::de::{
-    value::StringDeserializer, Deserialize, DeserializeSeed, Deserializer, EnumAccess,
-    Error as SerdeError, IntoDeserializer, MapAccess, SeqAccess, Unexpected, VariantAccess,
-    Visitor,
+    Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SerdeError, IntoDeserializer,
+    MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor, value::StringDeserializer,
 };
 use std::{fmt, str::FromStr, vec};
 

@@ -256,7 +256,7 @@ impl<'de> serde::de::Deserializer<'de> for &mut Deserializer<'de> {
                     ev.clone(),
                     mark.clone(),
                     "a sequence, map or scalar",
-                ))
+                ));
             }
         }
     }
