@@ -20,6 +20,7 @@ mod test {
     use super::*;
     use crate::strict_yaml::StrictYaml;
     use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
 
     #[test]
     fn test_primitive_de_ser() {
@@ -195,6 +196,11 @@ foobar
             b: usize,
             c: bool,
             d: u8,
+            e: Option<bool>,
+            f: bool,
+            g: Option<Vec<bool>>,
+            h: Vec<usize>,
+            i: HashMap<String, String>,
         }
 
         let input = r#"---
@@ -202,6 +208,11 @@ a: foo
 b: "50"
 c: "true"
 d: "2"
+e:
+f: "false"
+g:
+h:
+i:
 "#;
 
         let expected = Test {
@@ -209,10 +220,48 @@ d: "2"
             b: 50,
             c: true,
             d: 2,
+            e: None,
+            f: false,
+            g: None,
+            h: vec![],
+            i: HashMap::new(),
         };
 
         assert_eq!(expected, from_str::<Test>(input).unwrap());
         assert_eq!(input, to_string(&expected).unwrap());
+    }
+
+    #[test]
+    fn test_struct_de_ser_fail() {
+        {
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Test {
+                #[serde(rename = "a")]
+                _a: Vec<usize>,
+            }
+
+            let input = r#"---
+a: "foobar"
+"#;
+
+            assert!(from_str::<Test>(input).is_err());
+        }
+
+        {
+            #[derive(Debug, Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Test {
+                #[serde(rename = "a")]
+                _a: HashMap<String, String>,
+            }
+
+            let input = r#"---
+a: "foobar"
+"#;
+
+            assert!(from_str::<Test>(input).is_err());
+        }
     }
 
     #[test]
@@ -233,9 +282,18 @@ d: "2"
 
         #[derive(Debug, Deserialize, PartialEq, Serialize)]
         struct Sub {
-            x: bool,
-            y: String,
+            u: HashMap<String, String>,
+            v: Option<SubSub>,
+            w: bool,
+            x: String,
+            y: Option<Vec<bool>>,
             z: i64,
+        }
+
+        #[derive(Debug, Deserialize, PartialEq, Serialize)]
+        struct SubSub {
+            n: Option<Vec<usize>>,
+            m: bool,
         }
 
         let input = r#"---
@@ -252,10 +310,17 @@ c:
   - "12"
   - "false"
 d:
-  x: "false"
-  y: |
+  u:
+  v:
+    n:
+    m: "true"
+  w: "false"
+  x: |
     foo
     bar
+  y:
+    - "true"
+    - "false"
   z: "6"
 "#;
 
@@ -277,9 +342,12 @@ d:
             ],
             c: (10, 12, false),
             d: Sub {
+                u: HashMap::new(),
+                v: Some(SubSub { n: None, m: true }),
                 z: 6,
-                x: false,
-                y: "foo\nbar\n".to_string(),
+                w: false,
+                x: "foo\nbar\n".to_string(),
+                y: Some(vec![true, false]),
             },
         };
 
@@ -293,6 +361,7 @@ d:
         struct TestStruct {
             first: TestEnum,
             second: Vec<TestEnum>,
+            third: Option<TestEnum>,
         }
 
         #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -320,14 +389,13 @@ second:
   - a:
       b: "50"
       d:
-        - "1"
-        - "2"
   - a:
       b: "50"
       c: "false"
       d:
         - "1"
         - "2"
+third:
 "#;
 
         let expected = TestStruct {
@@ -340,7 +408,7 @@ second:
                 TestEnum::A {
                     b: 50,
                     c: None,
-                    d: vec![1, 2],
+                    d: vec![],
                 },
                 TestEnum::A {
                     b: 50,
@@ -348,6 +416,7 @@ second:
                     d: vec![1, 2],
                 },
             ],
+            third: None,
         };
 
         assert_eq!(expected, from_str::<TestStruct>(input).unwrap());
